@@ -3,12 +3,17 @@ import type { Renderer } from 'render/Renderer';
 
 export class Postprocessing {
   private bindings: GPUBindGroup = null!;
-  private background: GPUTexture = null!;
-  private input: GPUTexture = null!;
   private readonly renderer: Renderer;
   private readonly pipeline: GPURenderPipeline;
   private readonly resolution: GPUBuffer;
   private readonly sampler: GPUSampler;
+  private readonly textures: {
+    background: GPUTexture;
+    input: GPUTexture;
+  } = {
+    background: null!,
+    input: null!,
+  };
 
   constructor(renderer: Renderer) {
     const device = renderer.getDevice();
@@ -43,28 +48,30 @@ export class Postprocessing {
   }
 
   getBackground() {
-    return this.background;
+    const { textures } = this;
+    return textures.background;
   }
 
   getInput() {
-    return this.input;
+    const { textures } = this;
+    return textures.input;
   }
 
   setSize(width: number, height: number) {
-    const { renderer, pipeline, resolution, sampler } = this;
+    const { renderer, pipeline, resolution, sampler, textures } = this;
     const device = renderer.getDevice();
-    if (this.background) {
-      this.background.destroy();
+    if (textures.background) {
+      textures.background.destroy();
     }
-    this.background = device.createTexture({
+    textures.background = device.createTexture({
       size: [width, height],
       format: renderer.getColorFormat(),
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
-    if (this.input) {
-      this.input.destroy();
+    if (textures.input) {
+      textures.input.destroy();
     }
-    this.input = device.createTexture({
+    textures.input = device.createTexture({
       size: [width, height],
       format: renderer.getColorFormat(),
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
@@ -74,11 +81,11 @@ export class Postprocessing {
       entries: [
         {
           binding: 0,
-          resource: this.background.createView(),
+          resource: textures.background.createView(),
         },
         {
           binding: 1,
-          resource: this.input.createView(),
+          resource: textures.input.createView(),
         },
         {
           binding: 2,

@@ -32,7 +32,6 @@ export class Renderer {
   private readonly colorFormat: GPUTextureFormat;
   private readonly context: GPUCanvasContext;
   private readonly depthFormat: GPUTextureFormat = 'depth24plus';
-  private depth: GPUTexture = null!;
   private readonly device: GPUDevice;
   private readonly geometries = new Map<string, Geometry>();
   private readonly objects: {
@@ -44,7 +43,6 @@ export class Renderer {
     render?: (pass: GPURenderPassEncoder) => void;
     renderOrder?: number;
   }[] = [];
-  private output: GPUTexture = null!;
   private readonly pipelines = {
     compute: new Map<string, GPUComputePipeline>(),
     render: new Map<string, GPURenderPipeline>(),
@@ -52,6 +50,13 @@ export class Renderer {
   private readonly postprocessing: Postprocessing;
   private readonly sampleCount;
   private readonly size = { width: 0, height: 0 };
+  private readonly textures: {
+    depth: GPUTexture;
+    output: GPUTexture;
+  } = {
+    depth: null!,
+    output: null!,
+  };
 
   constructor(canvas: HTMLCanvasElement, sampleCount: number, device: GPUDevice) {
     const context = canvas.getContext('webgpu');
@@ -145,6 +150,7 @@ export class Renderer {
       postprocessing,
       sampleCount,
       size,
+      textures,
     } = this;
     size.width = Math.ceil(window.innerWidth * window.devicePixelRatio);
     size.height = Math.ceil(window.innerHeight * window.devicePixelRatio);
@@ -153,20 +159,20 @@ export class Renderer {
     canvas.height = size.height;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    if (this.depth) {
-      this.depth.destroy();
+    if (textures.depth) {
+      textures.depth.destroy();
     }
-    this.depth = device.createTexture({
+    textures.depth = device.createTexture({
       size: [size.width, size.height],
       sampleCount,
       format: depthFormat,
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
-    if (this.output) {
-      this.output.destroy();
+    if (textures.output) {
+      textures.output.destroy();
     }
     if (sampleCount > 1) {
-      this.output = device.createTexture({
+      textures.output = device.createTexture({
         size: [size.width, size.height],
         sampleCount,
         format: colorFormat,
@@ -213,7 +219,7 @@ export class Renderer {
   }
 
   render() {
-    const { background, camera, context, depth, device, objects, output, postprocessing } = this;
+    const { background, camera, context, device, objects, postprocessing, textures } = this;
     const commandEncoder = device.createCommandEncoder();
     const backgroundPassEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
@@ -230,8 +236,8 @@ export class Renderer {
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
-          ...(output ? {
-            view: output.createView(),
+          ...(textures.output ? {
+            view: textures.output.createView(),
             resolveTarget: postprocessing.getInput().createView(),
           } : {
             view: postprocessing.getInput().createView(),
@@ -242,7 +248,7 @@ export class Renderer {
         },
       ],
       depthStencilAttachment: {
-        view: depth.createView(),
+        view: textures.depth.createView(),
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'store',
