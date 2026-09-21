@@ -1,5 +1,5 @@
-import type { Renderer } from 'render/Renderer';
 import PostprocessingCode from 'render/Postprocessing.wgsl';
+import type { Renderer } from 'render/Renderer';
 
 export class Postprocessing {
   private bindings: GPUBindGroup = null!;
@@ -74,6 +74,7 @@ export class Postprocessing {
       ],
     });
     device.queue.writeBuffer(resolution, 0, new Float32Array([width, height]));
+    return this;
   }
 
   render(command: GPUCommandEncoder, output: GPUTextureView) {

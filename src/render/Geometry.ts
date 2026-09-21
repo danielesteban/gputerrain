@@ -1,7 +1,7 @@
 import { vec3 } from 'gl-matrix';
+import { Box } from 'math/Box';
+import { Sphere } from 'math/Sphere';
 import type { Renderer } from 'render/Renderer';
-import { Box } from 'compute/Box';
-import { Sphere } from 'compute/Sphere';
 
 export class Geometry {
   private readonly bounds = new Sphere();

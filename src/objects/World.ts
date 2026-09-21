@@ -1,7 +1,6 @@
 import { vec2, vec3 } from 'gl-matrix';
 import { ChunkGenerator } from 'compute/ChunkGenerator';
 import { Chunk } from 'objects/Chunk';
-import type { Camera } from 'render/Camera';
 import type { Renderer } from 'render/Renderer';
 
 export class World {
@@ -9,9 +8,8 @@ export class World {
   private static readonly chunkGrid = (() => {
     const { chunkRadius: radius } = World;
     const grid: vec2[] = [];
-    const size = Math.ceil(Math.sqrt(radius * radius + radius * radius));
-    for (let z = -size; z <= size; z++) {
-      for (let x = -size; x <= size; x++) {
+    for (let z = -radius; z <= radius; z++) {
+      for (let x = -radius; x <= radius; x++) {
         if (Math.sqrt(x ** 2 + z ** 2) < radius) {
           grid.push(vec2.fromValues(x, z));
         }
@@ -41,9 +39,10 @@ export class World {
   }
 
   private static readonly aux1 = vec2.create();
-  animate(camera: Camera, _delta: number, _time: number) {
+  animate(_delta: number, _time: number) {
     const { cameraChunk, chunks, generators, renderer } = this;
     const { aux1: chunk, chunkGrid, chunkRadius, chunkScale } = World;
+    const camera = renderer.getCamera();
     vec2.set(
       chunk,
       Math.floor((camera.position[0] + chunkScale[0] * 0.5) / chunkScale[0]),

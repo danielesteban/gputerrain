@@ -1,7 +1,9 @@
 import './main.css';
+import { vec3 } from 'gl-matrix';
 import { Input } from 'compute/Input';
 import { Raycaster } from 'compute/Raycaster';
 import { Grid } from 'objects/Grid';
+import { Debug } from 'objects/Debug';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
 
@@ -15,6 +17,7 @@ Renderer.create(canvas).then((renderer) => {
   const raycaster = new Raycaster();
 
   const grid = new Grid(renderer);
+  const debug = new Debug(renderer);
   const world = new World(renderer);
 
   const onFrame = () => {
@@ -26,16 +29,24 @@ Renderer.create(canvas).then((renderer) => {
 
     const pointer = input.getPointer();
     input.update(delta);
-    renderer.compute();
-    renderer.animate(delta, time);
-    renderer.render();
+
+    renderer
+      .animate(delta, time)
+      .compute()
+      .render();
 
     if (pointer.primaryDown) {
       raycaster
-        .intersect(renderer.getCamera(), [...world.getChunks(), grid])
+        .intersect([...world.getChunks(), grid], renderer.getCamera())
         .then((hit) => {
           if (!hit) return;
-          console.log(hit.position, hit.obj.constructor);
+          debug.position = vec3.scaleAndAdd(
+            hit.position,
+            hit.position,
+            hit.normal || vec3.fromValues(0, 1, 0),
+            0.5
+          );
+          debug.visible = true;
         });
     }
   };
@@ -58,6 +69,8 @@ Renderer.create(canvas).then((renderer) => {
   clock = performance.now() / 1000;
   animation = requestAnimationFrame(onFrame);
 
-  renderer.addObject(grid);
-  renderer.addObject(world);
+  renderer
+    .addObject(grid)
+    .addObject(debug)
+    .addObject(world);
 });

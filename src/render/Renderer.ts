@@ -1,16 +1,18 @@
 import { vec3 } from 'gl-matrix';
-import * as Primitives from 'compute/Primitives';
+import type { Sphere } from 'math/Sphere';
 import { Camera } from 'render/Camera';
 import { Geometry } from 'render/Geometry';
 import { Postprocessing } from 'render/Postprocessing';
-import type { Sphere } from 'compute/Sphere';
+import * as Primitives from 'render/Primitives';
 
 export class Renderer {
   static async create(canvas: HTMLCanvasElement, sampleCount: number = 4) {
     if (!navigator.gpu) {
       throw new Error("WebGPU is not supported");
     }
-    const adapter = await navigator.gpu.requestAdapter();
+    const adapter = await navigator.gpu.requestAdapter({
+      powerPreference: 'high-performance',
+    });
     if (!adapter) {
       throw new Error("Couldn't get GPUAdapter");
     }
@@ -30,7 +32,7 @@ export class Renderer {
   private readonly device: GPUDevice;
   private readonly geometries = new Map<string, Geometry>();
   private readonly objects: {
-    animate?: (camera: Camera, delta: number, time: number) => void;
+    animate?: (delta: number, time: number) => void;
     compute?: (pass: GPUComputePassEncoder) => void;
     destroy?: () => void;
     frustumCulled?: boolean;
@@ -167,10 +169,12 @@ export class Renderer {
       });
     }
     postprocessing.setSize(size.width, size.height);
+    return this;
   }
 
   addObject(obj: typeof this.objects[0]) {
     this.objects.push(obj);
+    return this;
   }
 
   removeObject(obj: typeof this.objects[0], destroy = true) {
@@ -182,11 +186,14 @@ export class Renderer {
     if (destroy) {
       obj.destroy?.();
     }
+    return this;
   }
 
   animate(delta: number, time: number) {
     const { camera, objects } = this;
-    objects.forEach((obj) => obj.animate?.(camera, delta, time));
+    camera.update();
+    objects.forEach((obj) => obj.animate?.(delta, time));
+    return this;
   }
 
   compute() {
@@ -196,11 +203,11 @@ export class Renderer {
     objects.forEach((obj) => obj.compute?.(passEncoder));
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
+    return this;
   }
 
   render() {
     const { camera, context, depth, device, objects, output, postprocessing } = this;
-    camera.update();
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
@@ -248,5 +255,6 @@ export class Renderer {
     passEncoder.end();
     postprocessing.render(commandEncoder, context.getCurrentTexture().createView());
     device.queue.submit([commandEncoder.finish()]);
+    return this;
   }
 }

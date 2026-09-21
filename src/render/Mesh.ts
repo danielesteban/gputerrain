@@ -1,6 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 import type { Intersection, Ray } from 'compute/Raycaster';
-import { Sphere } from 'compute/Sphere';
+import { Sphere } from 'math/Sphere';
 import type { Geometry } from 'render/Geometry';
 import type { Material } from 'render/Material';
 import type { Renderer } from 'render/Renderer';
@@ -13,7 +13,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     '}',
   ].join('\n');
 
-  private readonly device: GPUDevice;
+  protected readonly renderer: Renderer;
   private readonly bindings: GPUBindGroup[];
   private readonly geometry: GeometryType;
   private readonly material: MaterialType;
@@ -47,7 +47,8 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     material: MaterialType,
     bindings: Omit<GPUBindGroupDescriptor, 'layout'>[] = [],
   ) {
-    this.device = renderer.getDevice();
+    const device = renderer.getDevice();
+    this.renderer = renderer;
     this.material = material;
     this.geometry = geometry;
     this.transform = {
@@ -57,15 +58,17 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
         needsUpdate: true,
       },
       gpu: {
-        buffer: this.device.createBuffer({
+        buffer: device.createBuffer({
           size: 16 * 2 * 4,
           usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
         }),
         needsUpdate: true,
       },
     };
+    // @dani @incomplete
+    // This prolly belongs in Material
     this.bindings = [
-      this.device.createBindGroup({
+      device.createBindGroup({
         layout: material.getPipeline().getBindGroupLayout(0),
         entries: [
           {
@@ -79,7 +82,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
         ],
       }),
       ...bindings.map((binding, i) => (
-        this.device.createBindGroup({
+        device.createBindGroup({
           layout: material.getPipeline().getBindGroupLayout(i + 1),
           ...binding,
         })
@@ -179,17 +182,21 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     });
   }
 
-  render(pass: GPURenderPassEncoder) {
-    const { bindings, device, geometry, material, visible } = this;
-    if (!visible) return;
+  animate(_delta: number, _time: number) {
+    const { renderer } = this;
     const transform = this.getTransform();
     if (transform.gpu.needsUpdate) {
-      device.queue.writeBuffer(transform.gpu.buffer, 0, new Float32Array([
+      renderer.getDevice().queue.writeBuffer(transform.gpu.buffer, 0, new Float32Array([
         ...transform.cpu.matrix,
         ...transform.cpu.inverse,
       ]));
       transform.gpu.needsUpdate = false;
     }
+  }
+
+  render(pass: GPURenderPassEncoder) {
+    const { bindings, geometry, material, visible } = this;
+    if (!visible) return;
     material.render(pass, bindings, geometry);
   }
 }

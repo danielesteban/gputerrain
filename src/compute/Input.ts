@@ -120,6 +120,7 @@ export class Input {
   private onpointerlock() {
     const { canvas, movement, pointer } = this;
     this.isLocked = document.pointerLockElement === canvas;
+    document.body.classList[this.isLocked ? 'add' : 'remove']('pointerlock');
     if (!this.isLocked) {
       movement.x.length = movement.y.length = movement.z.length = 0;
       pointer.primary = pointer.primaryDown = pointer.primaryUp = false;

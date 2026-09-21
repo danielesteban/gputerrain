@@ -1,5 +1,5 @@
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
-import { Frustum } from 'compute/Frustum';
+import { Frustum } from 'math/Frustum';
 
 export class Camera {
   static readonly GPUStruct = [

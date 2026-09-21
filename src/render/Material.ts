@@ -31,7 +31,13 @@ export class Material {
     this.pipeline = renderer.getRenderPipeline(key, () => {
       const device = renderer.getDevice();
       const module = device.createShaderModule({
-        code: Camera.GPUStruct + '\n' + Mesh.GPUStruct + '\n' + code,
+        code: (
+          // @dani @incomplete
+          // Make this configurable/optional
+          Camera.GPUStruct + '\n'
+          + Mesh.GPUStruct + '\n'
+          + code
+        ),
       });
       return device.createRenderPipeline({
         label: key,

@@ -1,5 +1,5 @@
 import { mat4, vec3 } from 'gl-matrix';
-import type { Sphere } from 'compute/Sphere';
+import type { Sphere } from 'math/Sphere';
 
 export class Frustum {
   private readonly planes = Array.from({ length: 6 }, () => (new Plane()));

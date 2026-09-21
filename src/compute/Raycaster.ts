@@ -1,5 +1,5 @@
 import { type vec2, vec3 } from 'gl-matrix';
-import type { Sphere } from 'compute/Sphere';
+import type { Sphere } from 'math/Sphere';
 import type { Camera } from 'render/Camera';
 
 export type Intersection = {
@@ -66,14 +66,20 @@ export class Ray {
 export class Raycaster {
   private readonly rays: Ray[] = [];
 
-  async intersect(camera: Camera, objects: { raycast: (ray: Ray, intersections: Intersection[]) => Promise<void> }[]) {
+  // @dani @incomplete
+  // Implement optional maximum ray distance
+  async intersect(
+    objects: { raycast: (ray: Ray, intersections: Intersection[]) => Promise<void> }[],
+    camera: Camera,
+    position?: vec2
+  ) {
     const { rays } = this;
     const ray = rays.pop() || new Ray();
-    ray.setFromCamera(camera);
+    ray.setFromCamera(camera, position);
     const intersections: Intersection[] = [];
-    for (const obj of objects) {
-      await obj.raycast(ray, intersections);
-    }
+    await Promise.all(objects.map((obj) => (
+      obj.raycast(ray, intersections)
+    )));
     rays.push(ray);
     intersections.sort((a, b) => a.distance - b.distance);
     const hit = intersections[0];
