@@ -1,5 +1,5 @@
 import { vec2, vec3 } from 'gl-matrix';
-import { ChunkGenerator } from 'compute/ChunkGenerator';
+import { ChunkData } from 'compute/ChunkData';
 import { Chunk } from 'objects/Chunk';
 import type { Renderer } from 'render/Renderer';
 
@@ -24,12 +24,12 @@ export class World {
   private static readonly chunkScale = vec3.fromValues(64, 64, 64);
 
   private readonly cameraChunk = vec2.fromValues(Infinity, Infinity);
+  private readonly chunkData: ChunkData[];
   private readonly chunks = new Map<string, Chunk>();
-  private readonly generators: ChunkGenerator[];
   private readonly renderer: Renderer;
 
   constructor(renderer: Renderer) {
-    this.generators = Array.from({ length: World.chunkGrid.length }, () => new ChunkGenerator(renderer));
+    this.chunkData = Array.from({ length: World.chunkGrid.length }, () => new ChunkData(renderer));
     this.renderer = renderer;
   }
 
@@ -40,7 +40,7 @@ export class World {
 
   private static readonly aux1 = vec2.create();
   animate(_delta: number, _time: number) {
-    const { cameraChunk, chunks, generators, renderer } = this;
+    const { cameraChunk, chunkData, chunks, renderer } = this;
     const { aux1: chunk, chunkGrid, chunkRadius, chunkScale } = World;
     const camera = renderer.getCamera();
     vec2.set(
@@ -58,17 +58,82 @@ export class World {
       if (Math.sqrt((id[0] - cameraChunk[0]) ** 2 + (id[2] - cameraChunk[1]) ** 2) >= chunkRadius) {
         chunks.delete(`${id[0]}:${id[2]}`);
         renderer.removeObject(chunk);
-        generators.push(chunk.getGenerator());
+        chunkData.push(chunk.getData());
       }
     });
     for (const grid of chunkGrid) {
       vec2.add(chunk, cameraChunk, grid);
       const key = `${chunk[0]}:${chunk[1]}`;
       if (!chunks.has(key)) {
-        const obj = new Chunk(renderer, generators.pop()!, vec3.fromValues(chunk[0], 0, chunk[1]), chunkScale);
+        const obj = new Chunk(renderer, chunkData.pop()!, vec3.fromValues(chunk[0], 0, chunk[1]), chunkScale);
         chunks.set(key, obj);
         renderer.addObject(obj);
       }
     }
+  }
+
+  private static readonly aux2 = vec3.create();
+  private static readonly aux3 = vec3.create();
+  private static readonly aux4 = vec3.create();
+  update(brush: {
+    position: vec3;
+    radius: number;
+  } & (
+    { color: vec3; erase?: false }
+    | { erase: true }
+  )) {
+    const { chunks } = this;
+    const { aux2: chunk, aux3: position, aux4: pixel, chunkScale } = World;
+    vec3.set(
+      position,
+      brush.position[0] + chunkScale[0] * 0.5,
+      brush.position[1],
+      brush.position[2] + chunkScale[2] * 0.5,
+    );
+    vec3.set(
+      chunk,
+      Math.floor(position[0] / chunkScale[0]),
+      Math.floor(position[1] / chunkScale[1]),
+      Math.floor(position[2] / chunkScale[2]),
+    );
+    const chunkDataPixels = ChunkData.size - 2;
+    vec3.set(
+      position,
+      Math.floor((position[0] - chunk[0] * chunkScale[0]) / chunkScale[0] * chunkDataPixels),
+      Math.floor((position[1] - chunk[1] * chunkScale[1]) / chunkScale[1] * chunkDataPixels),
+      Math.floor((position[2] - chunk[2] * chunkScale[2]) / chunkScale[2] * chunkDataPixels)
+    );
+    const update = (x: number, z: number) => {
+      chunks.get(`${chunk[0] + x}:${chunk[2] + z}`)?.getData().update({
+        ...brush,
+        position: vec3.set(
+          pixel,
+          position[0] - x * chunkDataPixels,
+          position[1],
+          position[2] - z * chunkDataPixels
+        ),
+      });
+    };
+    update(0, 0);
+    if (position[0] - brush.radius <= 0) update(-1, 0);
+    if (position[0] + brush.radius >= chunkDataPixels - 1) update(1, 0);
+    if (position[2] - brush.radius <= 0) update(0, -1);
+    if (position[2] + brush.radius >= chunkDataPixels - 1) update(0, 1);
+    if (
+      position[0] - brush.radius <= 0
+      && position[2] - brush.radius <= 0
+    ) update(-1, -1);
+    if (
+      position[0] + brush.radius >= chunkDataPixels - 1
+      && position[2] - brush.radius <= 0
+    ) update(1, -1);
+    if (
+      position[0] - brush.radius <= 0
+      && position[2] + brush.radius >= chunkDataPixels - 1
+    ) update(-1, 1);
+    if (
+      position[0] + brush.radius >= chunkDataPixels - 1
+      && position[2] + brush.radius >= chunkDataPixels - 1
+    ) update(1, 1);
   }
 }

@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import { ChunkGenerator } from 'compute/ChunkGenerator';
+import { ChunkData } from 'compute/ChunkData';
 import ChunkRaycasterCode from 'compute/ChunkRaycaster.wgsl';
 import ChunkRaymarchCode from 'compute/ChunkRaymarch.wgsl';
 import { Irradiance } from 'compute/Irradiance';
@@ -36,8 +36,8 @@ export class Chunk extends Mesh {
 
   private static getRaymarchCode() {
     let code = (
-      `const SAMPLE_OFFSET = 1.0 / vec3f(${ChunkGenerator.size});\n`
-      + `const SAMPLE_SCALE = vec3f(${ChunkGenerator.size - 2}) / vec3f(${ChunkGenerator.size});\n`
+      `const SAMPLE_OFFSET = 1.0 / vec3f(${ChunkData.size});\n`
+      + `const SAMPLE_SCALE = vec3f(${ChunkData.size - 2}) / vec3f(${ChunkData.size});\n`
       + ChunkRaymarchCode
     );
     return code;
@@ -61,9 +61,9 @@ export class Chunk extends Mesh {
   }
 
   private readonly id: vec3;
-  private readonly generator: ChunkGenerator;
+  private readonly data: ChunkData;
 
-  constructor(renderer: Renderer, generator: ChunkGenerator, position: vec3, scale: vec3) {
+  constructor(renderer: Renderer, data: ChunkData, position: vec3, scale: vec3) {
     const samplers = Chunk.getSamplers(renderer);
     super(
       renderer,
@@ -73,7 +73,7 @@ export class Chunk extends Mesh {
         entries: [
           {
             binding: 0,
-            resource: generator.getData().createView(),
+            resource: data.getData().createView(),
           },
           {
             binding: 1,
@@ -90,9 +90,9 @@ export class Chunk extends Mesh {
         ],
       }]
     );
-    generator.setPosition(position);
+    data.setPosition(position);
     this.id = position;
-    this.generator = generator;
+    this.data = data;
     this.position = vec3.fromValues(
       position[0] * scale[0],
       position[1] * scale[1] + scale[1] * 0.5,
@@ -105,18 +105,18 @@ export class Chunk extends Mesh {
     return this.id;
   }
 
-  getGenerator() {
-    return this.generator;
+  getData() {
+    return this.data;
   }
 
   compute(pass: GPUComputePassEncoder) {
-    const { generator } = this;
-    generator.compute(pass);
+    const { data } = this;
+    data.compute(pass);
   }
 
   private static aux4 = vec3.create();
   override async raycast(ray: Ray, intersections: Intersection[]) {
-    const { generator, renderer } = this;
+    const { data, renderer } = this;
     const { aux4: origin } = Chunk;
     const bounds = this.getBounds();
     const transform = this.getTransform();
@@ -174,7 +174,7 @@ export class Chunk extends Mesh {
       entries: [
         {
           binding: 0,
-          resource: generator.getData().createView(),
+          resource: data.getData().createView(),
         },
         {
           binding: 1,

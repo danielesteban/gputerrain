@@ -3,7 +3,7 @@ import { vec3 } from 'gl-matrix';
 import { Input } from 'compute/Input';
 import { Raycaster } from 'compute/Raycaster';
 import { Grid } from 'objects/Grid';
-import { Debug } from 'objects/Debug';
+// import { Debug } from 'objects/Debug';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
 import { FPS } from 'ui/FPS';
@@ -20,12 +20,12 @@ Renderer.create(canvas).then((renderer) => {
   const raycaster = new Raycaster();
 
   const grid = new Grid(renderer);
-  const debug = new Debug(renderer);
+  // const debug = new Debug(renderer);
   const world = new World(renderer);
 
   renderer
     .addObject(grid)
-    .addObject(debug)
+    // .addObject(debug)
     .addObject(world);
 
   const onFrame = () => {
@@ -44,21 +44,31 @@ Renderer.create(canvas).then((renderer) => {
       .compute()
       .render();
 
-    if (pointer.primaryDown) {
+    if (pointer.primaryDown || pointer.secondaryDown) {
       raycaster
         .intersect([...world.getChunks(), grid], renderer.getCamera())
         .then((hit) => {
           if (!hit) {
-            debug.visible = false;
+            // debug.visible = false;
             return;
           }
-          debug.position = vec3.scaleAndAdd(
+          vec3.scaleAndAdd(
             hit.position,
             hit.position,
             hit.normal || vec3.fromValues(0, 1, 0),
-            0.5
+            0.001
           );
-          debug.visible = true;
+          // debug.position = hit.position;
+          // debug.visible = true;
+          world.update(pointer.secondaryDown ? {
+            position: hit.position,
+            radius: 10,
+            erase: true,
+          }: {
+            position: hit.position,
+            radius: 5,
+            color: vec3.fromValues(1.0, 0.0, 0.0),
+          });
         });
     }
   };
