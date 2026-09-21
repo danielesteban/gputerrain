@@ -59,3 +59,12 @@ body.pointerlock #cursor {
   display: none;
   color: #e99;
 }
+
+#fps {
+  position: absolute;
+  top: 0.5rem;
+  right: 1.5rem;
+  font-size: 3rem;
+  line-height: 4.5rem;
+  font-weight: 700;
+}

@@ -6,6 +6,7 @@ import { Grid } from 'objects/Grid';
 import { Debug } from 'objects/Debug';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
+import { FPS } from 'ui/FPS';
 
 const app = document.getElementById('app')!;
 const canvas = document.createElement('canvas');
@@ -13,6 +14,8 @@ const canvas = document.createElement('canvas');
 Renderer.create(canvas).then((renderer) => {
   let clock: number;
   let frame: number;
+
+  const fps = new FPS();
   const input = new Input(renderer);
   const raycaster = new Raycaster();
 
@@ -26,6 +29,7 @@ Renderer.create(canvas).then((renderer) => {
     const time = performance.now() / 1000;
     const delta = Math.min(time - clock, 1 / 30);
     clock = time;
+    fps.update(time);
 
     const pointer = input.getPointer();
     input.update(delta);
