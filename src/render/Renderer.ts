@@ -140,7 +140,7 @@ export class Renderer {
     return pipeline;
   }
 
-  setSize(width: number, height: number) {
+  setSize(width: number, height: number, pixelRatio = window.devicePixelRatio) {
     const {
       camera,
       canvas,
@@ -152,8 +152,8 @@ export class Renderer {
       size,
       textures,
     } = this;
-    size.width = Math.ceil(window.innerWidth * window.devicePixelRatio);
-    size.height = Math.ceil(window.innerHeight * window.devicePixelRatio);
+    size.width = Math.ceil(width * pixelRatio);
+    size.height = Math.ceil(height * pixelRatio);
     camera.aspect = size.width / size.height;
     canvas.width = size.width;
     canvas.height = size.height;

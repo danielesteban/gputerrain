@@ -30,7 +30,8 @@ body {
   height: 100%;
 }
 
-canvas, img, svg {
+canvas {
+  image-rendering: pixelated;
   vertical-align: middle;
 }
 

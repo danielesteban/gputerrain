@@ -11,8 +11,8 @@ const app = document.getElementById('app')!;
 const canvas = document.createElement('canvas');
 
 Renderer.create(canvas).then((renderer) => {
-  let animation: number;
   let clock: number;
+  let frame: number;
   const input = new Input(renderer);
   const raycaster = new Raycaster();
 
@@ -21,7 +21,7 @@ Renderer.create(canvas).then((renderer) => {
   const world = new World(renderer);
 
   const onFrame = () => {
-    animation = requestAnimationFrame(onFrame);
+    frame = requestAnimationFrame(onFrame);
 
     const time = performance.now() / 1000;
     const delta = Math.min(time - clock, 1 / 30);
@@ -51,14 +51,15 @@ Renderer.create(canvas).then((renderer) => {
     }
   };
   const onResize = () => {
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const rect = app.getBoundingClientRect();
+    renderer.setSize(rect.width, rect.height);
   };
   const onVisibility = () => {
     if (document.visibilityState === 'visible') {
       clock = performance.now() / 1000;
-      animation = requestAnimationFrame(onFrame);
+      frame = requestAnimationFrame(onFrame);
     } else {
-      cancelAnimationFrame(animation);
+      cancelAnimationFrame(frame);
     }
   };
 
@@ -67,7 +68,7 @@ Renderer.create(canvas).then((renderer) => {
   onResize();
   app.appendChild(canvas);
   clock = performance.now() / 1000;
-  animation = requestAnimationFrame(onFrame);
+  frame = requestAnimationFrame(onFrame);
 
   renderer
     .addObject(grid)
