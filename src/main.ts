@@ -39,7 +39,10 @@ Renderer.create(canvas).then((renderer) => {
       raycaster
         .intersect([...world.getChunks(), grid], renderer.getCamera())
         .then((hit) => {
-          if (!hit) return;
+          if (!hit) {
+            debug.visible = false;
+            return;
+          }
           debug.position = vec3.scaleAndAdd(
             hit.position,
             hit.position,
@@ -74,4 +77,10 @@ Renderer.create(canvas).then((renderer) => {
     .addObject(grid)
     .addObject(debug)
     .addObject(world);
+}).catch((e: Error) => {
+  const error = document.getElementById('error')!;
+  error.textContent = `Error: "${e.message}"`;
+  error.style.display = 'block';
+}).finally(() => {
+  document.getElementById('loading')!.style.display = 'none';
 });
