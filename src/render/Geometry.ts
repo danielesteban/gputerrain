@@ -5,7 +5,7 @@ import type { Renderer } from 'render/Renderer';
 
 export class Geometry {
   private readonly bounds = new Sphere();
-  private readonly buffers: { index: Uint32Array; vertices: Float32Array };
+  private readonly buffers: { index: Uint16Array; vertices: Float32Array };
   private readonly index: GPUBuffer;
   private readonly indexCount: number;
   private readonly vertices: GPUBuffer;
@@ -22,7 +22,7 @@ export class Geometry {
       usage: GPUBufferUsage.INDEX,
       mappedAtCreation: true,
     });
-    new Uint32Array(this.index.getMappedRange()).set(buffers.index);
+    new Uint16Array(this.index.getMappedRange()).set(buffers.index);
     this.index.unmap();
 
     this.indexCount = buffers.index.length;
@@ -36,12 +36,12 @@ export class Geometry {
 
     const { aux1: box, aux2: aux } = Geometry;
     box.makeEmpty();
-    for (let i = 0, l = buffers.vertices.length; i < l; i += 3) {
+    for (let i = 0, l = buffers.vertices.length; i < l; i += 8) {
       box.expandByPoint(vec3.set(aux, buffers.vertices[i], buffers.vertices[i + 1], buffers.vertices[i + 2]));
     }
     box.getCenter(this.bounds.center);
     let maxRadiusSq = 0;
-    for (let i = 0, l = buffers.vertices.length; i < l; i += 3) {
+    for (let i = 0, l = buffers.vertices.length; i < l; i += 8) {
       maxRadiusSq = Math.max(maxRadiusSq, vec3.sqrDist(this.bounds.center, vec3.set(aux, buffers.vertices[i], buffers.vertices[i + 1], buffers.vertices[i + 2])));
     }
     this.bounds.radius = Math.sqrt(maxRadiusSq);
@@ -70,7 +70,7 @@ export class Geometry {
       for (let i = 0, l = buffers.index.length; i < l; i += 3) {
         const triangle: [vec3, vec3, vec3] = [vec3.create(), vec3.create(), vec3.create()];
         for (let t = 0; t < 3; t++) {
-          const offset = buffers.index[i + t] * 3;
+          const offset = buffers.index[i + t] * 8;
           vec3.set(
             triangle[t],
             buffers.vertices[offset],

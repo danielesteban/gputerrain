@@ -3,6 +3,7 @@ import type { Renderer } from 'render/Renderer';
 
 export class Postprocessing {
   private bindings: GPUBindGroup = null!;
+  private background: GPUTexture = null!;
   private input: GPUTexture = null!;
   private readonly renderer: Renderer;
   private readonly pipeline: GPURenderPipeline;
@@ -41,16 +42,28 @@ export class Postprocessing {
     });
   }
 
+  getBackground() {
+    return this.background;
+  }
+
   getInput() {
     return this.input;
   }
 
   setSize(width: number, height: number) {
     const { renderer, pipeline, resolution, sampler } = this;
+    const device = renderer.getDevice();
+    if (this.background) {
+      this.background.destroy();
+    }
+    this.background = device.createTexture({
+      size: [width, height],
+      format: renderer.getColorFormat(),
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+    });
     if (this.input) {
       this.input.destroy();
     }
-    const device = renderer.getDevice();
     this.input = device.createTexture({
       size: [width, height],
       format: renderer.getColorFormat(),
@@ -61,14 +74,18 @@ export class Postprocessing {
       entries: [
         {
           binding: 0,
-          resource: this.input.createView(),
+          resource: this.background.createView(),
         },
         {
           binding: 1,
-          resource: sampler,
+          resource: this.input.createView(),
         },
         {
           binding: 2,
+          resource: sampler,
+        },
+        {
+          binding: 3,
           resource: resolution,
         },
       ],

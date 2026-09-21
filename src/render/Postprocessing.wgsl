@@ -1,6 +1,7 @@
-@group(0) @binding(0) var inputTexture: texture_2d<f32>;
-@group(0) @binding(1) var inputSampler: sampler;
-@group(0) @binding(2) var<uniform> resolution: vec2f;
+@group(0) @binding(0) var backgroundTexture: texture_2d<f32>;
+@group(0) @binding(1) var inputTexture: texture_2d<f32>;
+@group(0) @binding(2) var inputSampler: sampler;
+@group(0) @binding(3) var<uniform> resolution: vec2f;
 
 struct VertexInput {
   @builtin(vertex_index) index: u32,
@@ -19,7 +20,6 @@ struct FragmentOutput {
   @location(0) color: vec4f,
 }
 
-const BACKGROUND = vec3f(26.0 / 255.0);
 const BLUR = 0.85;
 
 fn gaussian(uv: vec2f) -> vec4f {
@@ -68,7 +68,7 @@ fn gaussian(uv: vec2f) -> vec4f {
   let d = length(uv * 0.5 * uv * 0.5);
   uv = (uv * d + uv * 0.935) + 0.5;
   var pixel = gaussian(uv);
-  var color = vec3f(pixel.rgb + BACKGROUND * (1.0 - pixel.a));
+  var color = vec3f(pixel.rgb + textureSample(backgroundTexture, inputSampler, uv).rgb * (1.0 - pixel.a));
 
   let s = 1.0 - smoothstep(320.0, 1440.0, resolution.y) + 1.0;
   let j = cos(uv.y*resolution.y*s) * 0.1;

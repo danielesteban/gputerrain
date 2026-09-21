@@ -11,22 +11,36 @@ export class Material {
     key,
     code,
     buffers = [{
-      arrayStride: 12,
+      arrayStride: 32,
       attributes: [
         {
           shaderLocation: 0,
           offset: 0,
           format: 'float32x3',
         },
+        {
+          shaderLocation: 1,
+          offset: 12,
+          format: 'float32x3',
+        },
+        {
+          shaderLocation: 2,
+          offset: 24,
+          format: 'float32x2',
+        },
       ],
     }],
     cullMode = 'back',
+    depth = true,
+    multisample = true,
   }: {
-    renderer: Renderer,
-    key: string,
-    code: string,
-    buffers?: GPUVertexBufferLayout[],
-    cullMode?: GPUCullMode,
+    renderer: Renderer;
+    key: string;
+    code: string;
+    buffers?: GPUVertexBufferLayout[];
+    cullMode?: GPUCullMode;
+    depth?: boolean;
+    multisample?: boolean;
   }) {
     this.pipeline = renderer.getRenderPipeline(key, () => {
       const device = renderer.getDevice();
@@ -54,14 +68,18 @@ export class Material {
           topology: 'triangle-list',
           cullMode,
         },
-        depthStencil: {
-          depthWriteEnabled: true,
-          depthCompare: 'less',
-          format: renderer.getDepthFormat(),
-        },
-        multisample: {
-          count: renderer.getSampleCount(),
-        },
+        ...(depth ? {
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: renderer.getDepthFormat(),
+          },
+        } : {}),
+        ...(multisample ? {
+          multisample: {
+            count: renderer.getSampleCount(),
+          },
+        } : {}),
       });
     });
   }
@@ -77,7 +95,7 @@ export class Material {
       pass.setBindGroup(i, bindings[i]);
     }
     pass.setVertexBuffer(0, geometry.getVertices());
-    pass.setIndexBuffer(geometry.getIndex(), 'uint32');
+    pass.setIndexBuffer(geometry.getIndex(), 'uint16');
     pass.drawIndexed(geometry.getIndexCount());
   }
 }

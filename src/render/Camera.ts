@@ -20,7 +20,7 @@ export class Camera {
 
   private readonly fov = 75;
   private readonly near = 0.1;
-  private readonly far = 1000;
+  private readonly far = 1024;
 
   private _aspect = 1;
   private readonly _position = vec3.create();

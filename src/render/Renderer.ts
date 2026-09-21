@@ -1,5 +1,6 @@
 import { vec3 } from 'gl-matrix';
 import type { Sphere } from 'math/Sphere';
+import { Background } from 'objects/Background';
 import { Camera } from 'render/Camera';
 import { Geometry } from 'render/Geometry';
 import { Postprocessing } from 'render/Postprocessing';
@@ -16,13 +17,16 @@ export class Renderer {
     if (!adapter) {
       throw new Error("Couldn't get GPUAdapter");
     }
-    const device = await adapter.requestDevice();
+    const device = await adapter.requestDevice({
+      requiredFeatures: ['float32-filterable'],
+    });
     if (!device) {
       throw new Error("Couldn't get GPUDevice");
     }
     return new Renderer(canvas, sampleCount, device);
   }
 
+  private readonly background: Background;
   private readonly camera: Camera;
   private readonly canvas: HTMLCanvasElement;
   private readonly colorFormat: GPUTextureFormat;
@@ -65,6 +69,7 @@ export class Renderer {
       format: this.colorFormat,
     });
     this.sampleCount = sampleCount;
+    this.background = new Background(this);
     this.postprocessing = new Postprocessing(this);
   }
 
@@ -190,8 +195,9 @@ export class Renderer {
   }
 
   animate(delta: number, time: number) {
-    const { camera, objects } = this;
+    const { background, camera, objects } = this;
     camera.update();
+    background.animate(delta, time);
     objects.forEach((obj) => obj.animate?.(delta, time));
     return this;
   }
@@ -207,8 +213,20 @@ export class Renderer {
   }
 
   render() {
-    const { camera, context, depth, device, objects, output, postprocessing } = this;
+    const { background, camera, context, depth, device, objects, output, postprocessing } = this;
     const commandEncoder = device.createCommandEncoder();
+    const backgroundPassEncoder = commandEncoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: postprocessing.getBackground().createView(),
+          clearValue: [0, 0, 0, 0],
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+      ],
+    });
+    background.render(backgroundPassEncoder);
+    backgroundPassEncoder.end();
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
