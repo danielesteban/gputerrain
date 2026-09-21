@@ -23,6 +23,11 @@ Renderer.create(canvas).then((renderer) => {
   const debug = new Debug(renderer);
   const world = new World(renderer);
 
+  renderer
+    .addObject(grid)
+    .addObject(debug)
+    .addObject(world);
+
   const onFrame = () => {
     frame = requestAnimationFrame(onFrame);
 
@@ -74,13 +79,9 @@ Renderer.create(canvas).then((renderer) => {
   document.addEventListener('visibilitychange', onVisibility);
   onResize();
   app.appendChild(canvas);
+
   clock = performance.now() / 1000;
   frame = requestAnimationFrame(onFrame);
-
-  renderer
-    .addObject(grid)
-    .addObject(debug)
-    .addObject(world);
 }).catch((e: Error) => {
   const error = document.getElementById('error')!;
   error.textContent = `Error: "${e.message}"`;
