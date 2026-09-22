@@ -46,7 +46,7 @@ fn raymarch(origin: vec3f, direction: vec3f) -> vec3f {
       var t0 = max(t - stepSize, bounds.x);
       var t1 = t;
       for (var j = 0; j < REFINEMENT_STEPS; j++) {
-        let tm = ( t0 + t1 ) * 0.5;
+        let tm = (t0 + t1) * 0.5;
         let dm = sample(origin + tm * direction + 0.5).w;
 
         let isGreater = dm > THRESHOLD;

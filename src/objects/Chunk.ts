@@ -3,7 +3,7 @@ import { ChunkData } from 'compute/ChunkData';
 import ChunkRaycasterCode from 'compute/ChunkRaycaster.wgsl';
 import ChunkRaymarchCode from 'compute/ChunkRaymarch.wgsl';
 import { Irradiance } from 'compute/Irradiance';
-import type { Intersection, Ray } from 'compute/Raycaster';
+import { type Intersection, type Ray, GPURay } from 'compute/Raycaster';
 import ChunkMaterialCode from 'objects/ChunkMaterial.wgsl';
 import { Material } from 'render/Material';
 import { Mesh } from 'render/Mesh';
@@ -114,14 +114,18 @@ export class Chunk extends Mesh {
     data.compute(pass);
   }
 
-  private static aux4 = vec3.create();
+  private static readonly aux4 = vec3.create();
+  private static readonly gpuRays: GPURay[] = [];
   override async raycast(ray: Ray, intersections: Intersection[]) {
     const { data, renderer } = this;
-    const { aux4: origin } = Chunk;
+    const { aux4: origin, gpuRays } = Chunk;
     const bounds = this.getBounds();
     const transform = this.getTransform();
-    if (!ray.intersectSphere(bounds)) {
-      return;
+    if (!bounds.containsPoint(ray.origin)) {
+      const distanceToBounds = ray.intersectSphere(bounds);
+      if (!distanceToBounds || distanceToBounds > ray.maxDistance) {
+        return;
+      }
     }
     const device = renderer.getDevice();
     const pipeline = renderer.getComputePipeline('ChunkRaycaster', () => (
@@ -131,41 +135,18 @@ export class Chunk extends Mesh {
         compute: {
           module: device.createShaderModule({
             code: (
-              Chunk.getRaymarchCode()
+              GPURay.GPUStruct + '\n'
+              + Chunk.getRaymarchCode()
               + ChunkRaycasterCode
             ),
           }),
         },
       })
     ));
-    const samplers = Chunk.getSamplers(renderer);
-    // @dani @incomplete
-    // Try to pool/reuse this two buffers
-    const query = device.createBuffer({
-      size: (
-        3 * 4 + 4
-        + 3 * 4 + 4
-        + 3 * 4 + 4
-        + 3 * 4 + 4
-      ),
-      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE,
-      mappedAtCreation: true,
-    });
     vec3.transformMat4(origin, ray.origin, transform.cpu.inverse);
-    new Float32Array(query.getMappedRange()).set([
-      ...origin, 0,
-      ...ray.direction, 0,
-      0, 0, 0, 0,
-      0, 0, 0, 0,
-    ]);
-    query.unmap();
-    const output = device.createBuffer({
-      size: (
-        3 * 4 + 4
-        + 3 * 4 + 4
-      ),
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-    });
+    const gpuRay = gpuRays.pop() || new GPURay(device);
+    gpuRay.setInput(origin, ray.direction);
+    const samplers = Chunk.getSamplers(renderer);
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(pipeline);
@@ -182,40 +163,28 @@ export class Chunk extends Mesh {
         },
         {
           binding: 2,
-          resource: query,
+          resource: gpuRay.getInput(),
         },
       ],
     }));
     passEncoder.dispatchWorkgroups(1);
     passEncoder.end();
-    commandEncoder.copyBufferToBuffer(
-      query,
-      (
-        3 * 4 + 4
-        + 3 * 4 + 4
-      ),
-      output,
-      0,
-      (
-        3 * 4 + 4
-        + 3 * 4 + 4
-      )
-    );
+    gpuRay.copyInputToOutput(commandEncoder);
     device.queue.submit([commandEncoder.finish()]);
-    await output.mapAsync(GPUMapMode.READ);
-    const result = new Float32Array(output.getMappedRange());
-    const position = vec3.fromValues(result[0], result[1], result[2]);
-    const normal = vec3.fromValues(result[4], result[5], result[6]);
-    output.unmap();
-    output.destroy();
-    query.destroy();
-    if (position[0] !== -1) {
-      vec3.transformMat4(position, position, transform.cpu.matrix);
-      intersections.push({
-        distance: vec3.distance(ray.origin, position),
-        normal,
-        obj: this,
-      });
+    const { position, normal } = await gpuRay.readOutput();
+    gpuRays.push(gpuRay);
+    if (position[0] === -1) {
+      return;
     }
+    vec3.transformMat4(position, position, transform.cpu.matrix);
+    const distance = vec3.distance(ray.origin, position);
+    if (distance > ray.maxDistance) {
+      return;
+    }
+    intersections.push({
+      distance,
+      normal,
+      obj: this,
+    });
   }
 }

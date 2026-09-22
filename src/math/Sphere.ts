@@ -30,7 +30,7 @@ export class Sphere {
 	}
 
   containsPoint(point: vec3) {
-		return (vec3.sqrDist(point, this.center) <= (this.radius * this.radius));
+		return vec3.sqrDist(point, this.center) <= (this.radius * this.radius);
 	}
 
   private static readonly aux1 = vec3.create();

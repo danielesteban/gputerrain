@@ -160,8 +160,11 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     const { aux1: a, aux2: b, aux3: c } = Mesh;
     const bounds = this.getBounds();
     const transform = this.getTransform();
-    if (!ray.intersectSphere(bounds)) {
-      return;
+    if (!bounds.containsPoint(ray.origin)) {
+      const distanceToBounds = ray.intersectSphere(bounds);
+      if (!distanceToBounds || distanceToBounds > ray.maxDistance) {
+        return;
+      }
     }
     const distance = geometry.getTriangles().reduce((result, triangle) => {
       vec3.transformMat4(a, triangle[0], transform.cpu.matrix);
@@ -173,7 +176,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
       }
       return result;
     }, Infinity);
-    if (distance === Infinity) {
+    if (distance === Infinity || distance > ray.maxDistance) {
       return;
     }
     intersections.push({

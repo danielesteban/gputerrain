@@ -46,7 +46,8 @@ Renderer.create(canvas).then((renderer) => {
 
     if (pointer.primaryDown || pointer.secondaryDown) {
       raycaster
-        .intersect([...world.getChunks(), grid], renderer.getCamera())
+        .setFromCamera(renderer.getCamera())
+        .intersect([...world.getChunks(), grid])
         .then((hit) => {
           if (!hit) {
             // debug.visible = false;
