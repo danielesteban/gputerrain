@@ -58,7 +58,7 @@ fn vert_main(vertex: VertexInput) -> VertexOutput {
   var output: VertexOutput;
   output.position = camera.projection * mvPosition;
   output.origin = (transform.inverse * vec4f(camera.position, 1.0)).xyz;
-	output.direction = vertex.position - output.origin;
+  output.direction = vertex.position - output.origin;
   return output;
 }
 

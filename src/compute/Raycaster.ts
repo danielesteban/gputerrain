@@ -63,19 +63,19 @@ export class Ray {
   intersectSphere(sphere: Sphere) {
     const { origin, direction } = this;
     const { aux1: vector } = Ray;
-		if (sphere.radius < 0) return 0;
-		vec3.sub(vector, sphere.center, origin);
-		const tca = vec3.dot(vector, direction);
-		const d2 = vec3.dot(vector, vector) - tca * tca;
-		const radius2 = sphere.radius * sphere.radius;
-		if (d2 > radius2) return 0;
-		const thc = Math.sqrt(radius2 - d2);
-		const t0 = tca - thc;
-		const t1 = tca + thc;
-		if (t1 < 0) return 0;
-		if (t0 < 0) return t1;
-		return t0;
-	}
+    if (sphere.radius < 0) return 0;
+    vec3.sub(vector, sphere.center, origin);
+    const tca = vec3.dot(vector, direction);
+    const d2 = vec3.dot(vector, vector) - tca * tca;
+    const radius2 = sphere.radius * sphere.radius;
+    if (d2 > radius2) return 0;
+    const thc = Math.sqrt(radius2 - d2);
+    const t0 = tca - thc;
+    const t1 = tca + thc;
+    if (t1 < 0) return 0;
+    if (t0 < 0) return t1;
+    return t0;
+  }
 
   private static readonly aux2 = vec3.create();
   private static readonly aux3 = vec3.create();

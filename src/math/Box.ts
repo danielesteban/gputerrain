@@ -24,7 +24,7 @@ export class Box {
   private static readonly aux2 = vec3.create();
   private static readonly aux3 = vec3.create();
   applyMatrix4(matrix: mat4) {
-		if (this.isEmpty()) {
+    if (this.isEmpty()) {
       return this;
     }
 
@@ -34,25 +34,25 @@ export class Box {
     vec3.copy(max, this.max);
 
     this.makeEmpty();
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], min[1], min[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], min[1], max[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], max[1], min[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], max[1], max[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], min[1], min[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], min[1], max[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], max[1], min[2]), matrix));
-		this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], max[1], max[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], min[1], min[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], min[1], max[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], max[1], min[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, min[0], max[1], max[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], min[1], min[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], min[1], max[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], max[1], min[2]), matrix));
+    this.expandByPoint(vec3.transformMat4(aux, vec3.set(aux, max[0], max[1], max[2]), matrix));
 
-		return this;
-	}
+    return this;
+  }
 
   getCenter(target: vec3) {
     return this.isEmpty() ? vec3.set(target, 0, 0, 0) : vec3.scale(target, vec3.add(target, this.min, this.max), 0.5);
   }
 
   getSize(target: vec3) {
-		return this.isEmpty() ? vec3.set(target, 0, 0, 0) : vec3.sub(target, this.max, this.min);
-	}
+    return this.isEmpty() ? vec3.set(target, 0, 0, 0) : vec3.sub(target, this.max, this.min);
+  }
 
   union(box: Box) {
     vec3.min(this.min, this.min, box.min);
@@ -63,6 +63,6 @@ export class Box {
   expandByPoint(point: vec3) {
     vec3.min(this.min, this.min, point);
     vec3.max(this.max, this.max, point);
-		return this;
-	}
+    return this;
+  }
 }
