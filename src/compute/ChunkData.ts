@@ -9,6 +9,14 @@ import type { Renderer } from 'render/Renderer';
 export class ChunkData {
   static readonly size = 128;
   static readonly subChunks = 2;
+  private static readonly noise = {
+    colorFrequency: 1,
+    colorSeed: 1337,
+    generatorFrequency: 1,
+    generatorSeed: 0,
+    heightmapFrequency: 0.5,
+    heightmapSeed: 0,
+  };
 
   private static inputData?: GPUTexture;
   private static getInputData(renderer: Renderer) {
@@ -70,8 +78,11 @@ export class ChunkData {
           compute: {
             module: device.createShaderModule({
               code: (
-                `const SIZE = vec3u(${ChunkData.size});\n`
-                + `const SUBCHUNKS = ${ChunkData.subChunks};\n`
+                `const NOISE_FREQUENCY: f32 = ${ChunkData.noise.generatorFrequency};\n`
+                + `const NOISE_SEED: f32 = ${ChunkData.noise.generatorSeed};\n`
+                + `const COLOR_FREQUENCY: f32 = ${ChunkData.noise.colorFrequency};\n`
+                + `const COLOR_SEED: f32 = ${ChunkData.noise.colorSeed};\n`
+                + `const SIZE: vec3u = vec3u(${ChunkData.size});\n`
                 + HSLCode
                 + NoiseCode
                 + ChunkGeneratorCode
@@ -87,8 +98,10 @@ export class ChunkData {
           compute: {
             module: device.createShaderModule({
               code: (
-                `const SIZE = vec3u(${ChunkData.size});\n`
-                + `const SUBCHUNKS = ${ChunkData.subChunks};\n`
+                `const NOISE_FREQUENCY: f32 = ${ChunkData.noise.heightmapFrequency};\n`
+                + `const NOISE_SEED: f32 = ${ChunkData.noise.heightmapSeed};\n`
+                + `const SIZE: vec3u = vec3u(${ChunkData.size});\n`
+                + `const SUBCHUNKS: u32 = ${ChunkData.subChunks};\n`
                 + NoiseCode
                 + ChunkHeightmapCode
               ),
@@ -103,7 +116,7 @@ export class ChunkData {
           compute: {
             module: device.createShaderModule({
               code: (
-                `const SIZE = vec3i(${ChunkData.size});\n`
+                `const SIZE: vec3i = vec3i(${ChunkData.size});\n`
                 + ChunkUpdateCode
               ),
             }),

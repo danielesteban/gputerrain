@@ -9,7 +9,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
   let uv = position + (vec3f(f32(id.x), 0.0, f32(id.y)) - 0.5) / vec3f(SIZE - 2);
   heightmap[id.y * SIZE.x + id.x] = clamp(
-    (FBM2D((uv).xz / f32(SUBCHUNKS * 2)) * 0.5 + 0.5) * f32(SUBCHUNKS),
+    (FBM2D((uv).xz * NOISE_FREQUENCY + NOISE_SEED) * 0.5 + 0.5) * f32(SUBCHUNKS),
     0.0,
     f32(SUBCHUNKS) - 4.0 / f32(SIZE.y - 2)
   );

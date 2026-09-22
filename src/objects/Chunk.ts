@@ -36,8 +36,8 @@ export class Chunk extends Mesh {
 
   private static getRaymarchCode() {
     let code = (
-      `const SAMPLE_OFFSET = 1.0 / vec3f(${ChunkData.size});\n`
-      + `const SAMPLE_SCALE = vec3f(${ChunkData.size - 2}) / vec3f(${ChunkData.size});\n`
+      `const SAMPLE_OFFSET: vec3f = 1.0 / vec3f(${ChunkData.size});\n`
+      + `const SAMPLE_SCALE: vec3f = vec3f(${ChunkData.size - 2}) / vec3f(${ChunkData.size});\n`
       + ChunkRaymarchCode
     );
     return code;
