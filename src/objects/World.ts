@@ -5,6 +5,8 @@ import type { Renderer } from 'render/Renderer';
 
 export class World {
   private static readonly chunkRadius = 5;
+  private static readonly chunkScale = vec3.fromValues(64, 64, 64);
+
   private static readonly chunkGrid = (() => {
     const { chunkRadius: radius } = World;
     const grid: vec2[] = [];
@@ -21,7 +23,6 @@ export class World {
     ));
     return grid;
   })();
-  private static readonly chunkScale = vec3.fromValues(64, 64, 64);
 
   private readonly cameraChunk = vec2.fromValues(Infinity, Infinity);
   private readonly chunkData: ChunkData[];
@@ -29,7 +30,7 @@ export class World {
   private readonly renderer: Renderer;
 
   constructor(renderer: Renderer) {
-    this.chunkData = Array.from({ length: World.chunkGrid.length }, () => new ChunkData(renderer));
+    this.chunkData = Array.from({ length: World.chunkGrid.length * ChunkData.subChunks }, () => new ChunkData(renderer));
     this.renderer = renderer;
   }
 
@@ -53,21 +54,23 @@ export class World {
     }
     vec2.copy(cameraChunk, chunk);
 
-    chunks.forEach((chunk) => {
+    for (const chunk of chunks.values()) {
       const id = chunk.getId();
       if (Math.sqrt((id[0] - cameraChunk[0]) ** 2 + (id[2] - cameraChunk[1]) ** 2) >= chunkRadius) {
-        chunks.delete(`${id[0]}:${id[2]}`);
+        chunks.delete(`${id[0]}:${id[1]}:${id[2]}`);
         renderer.removeObject(chunk);
         chunkData.push(chunk.getData());
       }
-    });
+    }
     for (const grid of chunkGrid) {
       vec2.add(chunk, cameraChunk, grid);
-      const key = `${chunk[0]}:${chunk[1]}`;
-      if (!chunks.has(key)) {
-        const obj = new Chunk(renderer, chunkData.pop()!, vec3.fromValues(chunk[0], 0, chunk[1]), chunkScale);
-        chunks.set(key, obj);
-        renderer.addObject(obj);
+      for (let y = 0; y < ChunkData.subChunks; y++) {
+        const key = `${chunk[0]}:${y}:${chunk[1]}`;
+        if (!chunks.has(key)) {
+          const obj = new Chunk(renderer, chunkData.pop()!, vec3.fromValues(chunk[0], y, chunk[1]), chunkScale);
+          chunks.set(key, obj);
+          renderer.addObject(obj);
+        }
       }
     }
   }
@@ -103,37 +106,30 @@ export class World {
       Math.floor((position[1] - chunk[1] * chunkScale[1]) / chunkScale[1] * chunkDataPixels),
       Math.floor((position[2] - chunk[2] * chunkScale[2]) / chunkScale[2] * chunkDataPixels)
     );
-    const update = (x: number, z: number) => {
-      chunks.get(`${chunk[0] + x}:${chunk[2] + z}`)?.getData().update({
-        ...brush,
-        position: vec3.set(
-          pixel,
-          position[0] - x * chunkDataPixels,
-          position[1],
-          position[2] - z * chunkDataPixels
-        ),
-      });
-    };
-    update(0, 0);
-    if (position[0] - brush.radius <= 0) update(-1, 0);
-    if (position[0] + brush.radius >= chunkDataPixels - 1) update(1, 0);
-    if (position[2] - brush.radius <= 0) update(0, -1);
-    if (position[2] + brush.radius >= chunkDataPixels - 1) update(0, 1);
-    if (
-      position[0] - brush.radius <= 0
-      && position[2] - brush.radius <= 0
-    ) update(-1, -1);
-    if (
-      position[0] + brush.radius >= chunkDataPixels - 1
-      && position[2] - brush.radius <= 0
-    ) update(1, -1);
-    if (
-      position[0] - brush.radius <= 0
-      && position[2] + brush.radius >= chunkDataPixels - 1
-    ) update(-1, 1);
-    if (
-      position[0] + brush.radius >= chunkDataPixels - 1
-      && position[2] + brush.radius >= chunkDataPixels - 1
-    ) update(1, 1);
+    for (let x = -1; x <= 1; x++) {
+      for (let y = -1; y <= 1; y++) {
+        for (let z = -1; z <= 1; z++) {
+          if (
+            (x < 0 && position[0] - brush.radius > 0)
+            || (y < 0 && position[1] - brush.radius > 0)
+            || (z < 0 && position[2] - brush.radius > 0)
+            || (x > 0 && position[0] + brush.radius < chunkDataPixels - 1)
+            || (y > 0 && position[1] + brush.radius < chunkDataPixels - 1)
+            || (z > 0 && position[2] + brush.radius < chunkDataPixels - 1)
+          ) {
+            continue;
+          }
+          chunks.get(`${chunk[0] + x}:${chunk[1] + y}:${chunk[2] + z}`)?.getData().update({
+            ...brush,
+            position: vec3.set(
+              pixel,
+              position[0] - x * chunkDataPixels,
+              position[1] - y * chunkDataPixels,
+              position[2] - z * chunkDataPixels
+            ),
+          });
+        }
+      }
+    }
   }
 }

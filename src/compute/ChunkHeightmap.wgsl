@@ -7,10 +7,10 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     return;
   }
 
-  let uv = (vec3f(f32(id.x), 0.0, f32(id.y)) - 0.5) / vec3f(SIZE - 2);
+  let uv = position + (vec3f(f32(id.x), 0.0, f32(id.y)) - 0.5) / vec3f(SIZE - 2);
   heightmap[id.y * SIZE.x + id.x] = clamp(
-    FBM2D((position + uv).xz * 0.5) * 0.5 + 0.5,
+    (FBM2D((uv).xz / f32(SUBCHUNKS * 2)) * 0.5 + 0.5) * f32(SUBCHUNKS),
     0.0,
-    1.0 - 4.0 / f32(SIZE.y - 2)
+    f32(SUBCHUNKS) - 4.0 / f32(SIZE.y - 2)
   );
 }

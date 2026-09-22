@@ -38,7 +38,7 @@ export class Input {
   constructor(renderer: Renderer) {
     this.canvas = renderer.getCanvas();
     this.camera = renderer.getCamera();
-    this.camera.position = vec3.fromValues(0, 64, 0);
+    this.camera.position = vec3.fromValues(0, 128, 0);
     this.updateDirection();
 
     this.onkeydown = this.onkeydown.bind(this);

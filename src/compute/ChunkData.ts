@@ -7,7 +7,8 @@ import NoiseCode from 'compute/Noise.wgsl';
 import type { Renderer } from 'render/Renderer';
 
 export class ChunkData {
-  static readonly size = 64;
+  static readonly size = 128;
+  static readonly subChunks = 2;
 
   private static inputData?: GPUTexture;
   private static getInputData(renderer: Renderer) {
@@ -70,6 +71,7 @@ export class ChunkData {
             module: device.createShaderModule({
               code: (
                 `const SIZE = vec3u(${ChunkData.size});\n`
+                + `const SUBCHUNKS = ${ChunkData.subChunks};\n`
                 + HSLCode
                 + NoiseCode
                 + ChunkGeneratorCode
@@ -86,6 +88,7 @@ export class ChunkData {
             module: device.createShaderModule({
               code: (
                 `const SIZE = vec3u(${ChunkData.size});\n`
+                + `const SUBCHUNKS = ${ChunkData.subChunks};\n`
                 + NoiseCode
                 + ChunkHeightmapCode
               ),
