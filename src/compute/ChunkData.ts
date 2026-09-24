@@ -6,6 +6,17 @@ import HSLCode from 'compute/HSL.wgsl';
 import NoiseCode from 'compute/Noise.wgsl';
 import type { Renderer } from 'render/Renderer';
 
+// @dani @incomplete
+// Create a single ChunkData per vertical chunk
+// of size = [
+//   ChunkData.size,
+//   ChunkData.size * ChunkData.subchunks,
+//   ChunkData.size
+// ]
+// to avoid computing the heightmap for every subchunk.
+// This will require refactoring ChunkRaymarcher, ChunkUpdate, etc.
+// But it should worth it.
+
 export class ChunkData {
   static readonly size = 128;
   static readonly subChunks = 2;
