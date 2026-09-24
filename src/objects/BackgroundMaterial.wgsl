@@ -34,7 +34,7 @@ fn vert_main(vertex: VertexInput) -> VertexOutput {
 
 @fragment
 fn frag_main(fragment: FragmentInput) -> FragmentOutput {
-  const background = vec3f(0.075, 0.15, 0.3);
+  const background = vec3f(0.529411764705882, 0.807843137254902, 0.9215686274509803);
   const granularity = background * 0.02;
   let color = (
     mix(background * 0.2, background * 2.0, fragment.altitude)

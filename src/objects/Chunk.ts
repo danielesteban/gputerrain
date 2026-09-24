@@ -2,7 +2,6 @@ import { vec3 } from 'gl-matrix';
 import { ChunkData } from 'compute/ChunkData';
 import ChunkRaycasterCode from 'compute/ChunkRaycaster.wgsl';
 import ChunkRaymarchCode from 'compute/ChunkRaymarch.wgsl';
-import { Irradiance } from 'compute/Irradiance';
 import { type Intersection, type Ray, GPURay } from 'compute/Raycaster';
 import ChunkMaterialCode from 'objects/ChunkMaterial.wgsl';
 import { Material } from 'render/Material';
@@ -26,14 +25,6 @@ export class Chunk extends Mesh {
     return Chunk.material;
   }
 
-  private static irradiance?: GPUTextureView;
-  private static getIrradiance(renderer: Renderer) {
-    if (!Chunk.irradiance) {
-      Chunk.irradiance = Irradiance(renderer.getDevice());
-    }
-    return Chunk.irradiance;
-  }
-
   private static getRaymarchCode() {
     let code = (
       `const SAMPLE_OFFSET: vec3f = 1.0 / vec3f(${ChunkData.size});\n`
@@ -43,7 +34,7 @@ export class Chunk extends Mesh {
     return code;
   }
 
-  private static samplers?: { data: GPUSampler, irradiance: GPUSampler };
+  private static samplers?: { data: GPUSampler, texture: GPUSampler };
   private static getSamplers(renderer: Renderer) {
     if (!Chunk.samplers) {
       Chunk.samplers = {
@@ -51,7 +42,7 @@ export class Chunk extends Mesh {
           magFilter: 'linear',
           minFilter: 'linear',
         }),
-        irradiance: renderer.getDevice().createSampler({
+        texture: renderer.getDevice().createSampler({
           magFilter: 'linear',
           minFilter: 'linear',
         }),
@@ -81,11 +72,19 @@ export class Chunk extends Mesh {
           },
           {
             binding: 2,
-            resource: Chunk.getIrradiance(renderer),
+            resource: renderer.getTexture('BRDF').createView(),
           },
           {
             binding: 3,
-            resource: samplers.irradiance,
+            resource: renderer.getTexture('Irradiance').createView({ dimension: 'cube' }),
+          },
+          {
+            binding: 4,
+            resource: renderer.getTexture('Prefiltered').createView({ dimension: 'cube' }),
+          },
+          {
+            binding: 5,
+            resource: samplers.texture,
           },
         ],
       }]

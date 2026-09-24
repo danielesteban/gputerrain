@@ -1,17 +1,25 @@
 import './main.css';
 import { vec3 } from 'gl-matrix';
+import { HDR } from 'compute/HDR';
 import { Input } from 'compute/Input';
 import { Raycaster } from 'compute/Raycaster';
 import { Grid } from 'objects/Grid';
 // import { Debug } from 'objects/Debug';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
+import Environment from 'textures/citrus_orchard_road_puresky_2k.hdr';
 import { FPS } from 'ui/FPS';
 
 const app = document.getElementById('app')!;
 const canvas = document.createElement('canvas');
 
-Renderer.create(canvas).then((renderer) => {
+Promise.all([
+  Renderer.create(canvas),
+  await HDR(Environment),
+])
+.then(([renderer, environment]) => {
+  renderer.setEnvironment(environment);
+
   let clock: number;
   let frame: number;
 

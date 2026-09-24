@@ -5,6 +5,10 @@ import { Camera } from 'render/Camera';
 import { Geometry } from 'render/Geometry';
 import { Postprocessing } from 'render/Postprocessing';
 import * as Primitives from 'render/Primitives';
+import { BRDF } from 'textures/BRDF';
+import { Cubemap } from 'textures/Cubemap';
+import { Irradiance } from 'textures/Irradiance';
+import { Prefiltered } from 'textures/Prefiltered';
 
 export class Renderer {
   static async create(canvas: HTMLCanvasElement, sampleCount: number = 4) {
@@ -51,9 +55,17 @@ export class Renderer {
   private readonly sampleCount;
   private readonly size = { width: 0, height: 0 };
   private readonly textures: {
+    BRDF: GPUTexture,
+    Environment: GPUTexture;
+    Irradiance: GPUTexture;
+    Prefiltered: GPUTexture;
     depth: GPUTexture;
     output: GPUTexture;
   } = {
+    BRDF: null!,
+    Environment: null!,
+    Irradiance: null!,
+    Prefiltered: null!,
     depth: null!,
     output: null!,
   };
@@ -76,6 +88,7 @@ export class Renderer {
     this.sampleCount = sampleCount;
     this.background = new Background(this);
     this.postprocessing = new Postprocessing(this);
+    this.textures.BRDF = BRDF(device);
   }
 
   destroy() {
@@ -138,6 +151,28 @@ export class Renderer {
       pipelines.render.set(key, pipeline);
     }
     return pipeline;
+  }
+
+  getTexture(key: 'BRDF' | 'Irradiance' | 'Prefiltered') {
+    // @dani @incomplete
+    // Figure out a way to notify the consumer when this textures change
+    return this.textures[key];
+  }
+
+  setEnvironment(image: { data: Float16Array; width: number; height: number }) {
+    const { device, textures } = this;
+    if (textures.Environment) {
+      textures.Environment.destroy();
+    }
+    textures.Environment = Cubemap(device, image);
+    if (textures.Irradiance) {
+      textures.Irradiance.destroy();
+    }
+    textures.Irradiance = Irradiance(device, textures.Environment);
+    if (textures.Prefiltered) {
+      textures.Prefiltered.destroy();
+    }
+    textures.Prefiltered = Prefiltered(device, textures.Environment);
   }
 
   setSize(width: number, height: number, pixelRatio = window.devicePixelRatio) {
