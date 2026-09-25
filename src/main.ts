@@ -7,7 +7,7 @@ import { Grid } from 'objects/Grid';
 // import { Debug } from 'objects/Debug';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
-import Environment from 'textures/citrus_orchard_road_puresky_2k.hdr';
+import Environment from 'textures/citrus_orchard_road_puresky_2k.jpg';
 import { FPS } from 'ui/FPS';
 
 const app = document.getElementById('app')!;
