@@ -40,7 +40,7 @@ export class Camera {
     this.device = device;
     this.buffer = device.createBuffer({
       size: (
-        (this._position as Float32Array).byteLength + 4
+        (this.position as Float32Array).byteLength + 4
         + (this.projection as Float32Array).byteLength
         + (this.view as Float32Array).byteLength
       ),
@@ -123,13 +123,13 @@ export class Camera {
   private static readonly aux2 = vec3.create();
   getView() {
     const {
-      _position,
-      _direction,
+      position,
+      direction,
       view,
     } = this;
     const { aux2: target, up } = Camera;
     if (this.viewNeedsUpdate) {
-      mat4.lookAt(view, _position, vec3.add(target, _position, _direction), up);
+      mat4.lookAt(view, position, vec3.add(target, position, direction), up);
       this.viewNeedsUpdate = false;
       this.bufferNeedsUpdate = true;
       this.frustumNeedsUpdate = true;
@@ -152,7 +152,7 @@ export class Camera {
     const {
       device,
       buffer,
-      _position,
+      position,
     } = this;
     const projection = this.getProjection();
     const view = this.getView();
@@ -161,7 +161,7 @@ export class Camera {
     }
     this.bufferNeedsUpdate = false;  
     device.queue.writeBuffer(buffer, 0, new Float32Array([
-      ..._position, 0,
+      ...position, 0,
       ...projection,
       ...view,
     ]));
