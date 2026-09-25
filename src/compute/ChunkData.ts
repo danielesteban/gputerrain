@@ -1,21 +1,10 @@
-import { vec3 } from 'gl-matrix';
+import { vec2, vec3 } from 'gl-matrix';
 import ChunkGeneratorCode from 'compute/ChunkGenerator.wgsl';
 import ChunkHeightmapCode from 'compute/ChunkHeightmap.wgsl';
 import ChunkUpdateCode from 'compute/ChunkUpdate.wgsl';
 import HSLCode from 'compute/HSL.wgsl';
 import NoiseCode from 'compute/Noise.wgsl';
 import type { Renderer } from 'render/Renderer';
-
-// @dani @incomplete
-// Create a single ChunkData per vertical chunk
-// of size = [
-//   ChunkData.size,
-//   ChunkData.size * ChunkData.subchunks,
-//   ChunkData.size
-// ]
-// to avoid computing the heightmap for every subchunk.
-// This will require refactoring ChunkRaymarcher, ChunkUpdate, etc.
-// But it should worth it.
 
 export class ChunkData {
   static readonly size = 128;
@@ -35,7 +24,11 @@ export class ChunkData {
       const device = renderer.getDevice();
       ChunkData.inputData = device.createTexture({
         dimension: '3d',
-        size: [ChunkData.size, ChunkData.size, ChunkData.size],
+        size: [
+          ChunkData.size + 2,
+          ChunkData.size * ChunkData.subChunks,
+          ChunkData.size + 2,
+        ],
         format: 'rgba8unorm',
         usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING,
       });
@@ -43,6 +36,7 @@ export class ChunkData {
     return ChunkData.inputData;
   }
 
+  private readonly _id = vec2.create();
   private readonly renderer: Renderer;
   private readonly brush: GPUBuffer;
   private readonly data: GPUTexture;
@@ -69,16 +63,20 @@ export class ChunkData {
     });
     this.data = device.createTexture({
       dimension: '3d',
-      size: [ChunkData.size, ChunkData.size, ChunkData.size],
+      size: [
+        ChunkData.size + 2,
+        ChunkData.size * ChunkData.subChunks,
+        ChunkData.size + 2,
+      ],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
     });
     this.heightmap = device.createBuffer({
-      size: ChunkData.size * ChunkData.size * 4,
+      size: (ChunkData.size + 2) * (ChunkData.size + 2) * 4,
       usage: GPUBufferUsage.STORAGE,
     });
     this.position = device.createBuffer({
-      size: 3 * 4,
+      size: 2 * 4,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
     this.pipelines = {
@@ -93,7 +91,7 @@ export class ChunkData {
                 + `const NOISE_SEED: f32 = ${ChunkData.noise.generatorSeed};\n`
                 + `const COLOR_FREQUENCY: f32 = ${ChunkData.noise.colorFrequency};\n`
                 + `const COLOR_SEED: f32 = ${ChunkData.noise.colorSeed};\n`
-                + `const SIZE: vec3u = vec3u(${ChunkData.size});\n`
+                + `const SIZE: vec3u = vec3u(${ChunkData.size + 2}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size + 2});\n`
                 + HSLCode
                 + NoiseCode
                 + ChunkGeneratorCode
@@ -111,8 +109,7 @@ export class ChunkData {
               code: (
                 `const NOISE_FREQUENCY: f32 = ${ChunkData.noise.heightmapFrequency};\n`
                 + `const NOISE_SEED: f32 = ${ChunkData.noise.heightmapSeed};\n`
-                + `const SIZE: vec3u = vec3u(${ChunkData.size});\n`
-                + `const SUBCHUNKS: u32 = ${ChunkData.subChunks};\n`
+                + `const SIZE: vec3u = vec3u(${ChunkData.size + 2}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size + 2});\n`
                 + NoiseCode
                 + ChunkHeightmapCode
               ),
@@ -127,7 +124,7 @@ export class ChunkData {
           compute: {
             module: device.createShaderModule({
               code: (
-                `const SIZE: vec3i = vec3i(${ChunkData.size});\n`
+                `const SIZE: vec3i = vec3i(${ChunkData.size + 2}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size + 2});\n`
                 + ChunkUpdateCode
               ),
             }),
@@ -193,19 +190,26 @@ export class ChunkData {
   }
 
   destroy() {
-    const { data, position } = this;
+    const { brush, data, heightmap, position } = this;
+    brush.destroy();
     data.destroy();
+    heightmap.destroy();
     position.destroy();
+  }
+
+  get id(): Readonly<vec2> {
+    return this._id;
+  }
+
+  set id(value: vec2) {
+    const { _id, renderer, position } = this;
+    vec2.copy(_id, value);
+    renderer.getDevice().queue.writeBuffer(position, 0, value as Float32Array);
+    this.needsUpdate = true;
   }
 
   getData() {
     return this.data;
-  }
-
-  setPosition(value: vec3) {
-    const { renderer, position } = this;
-    renderer.getDevice().queue.writeBuffer(position, 0, value as Float32Array);
-    this.needsUpdate = true;
   }
 
   compute(pass: GPUComputePassEncoder) {
@@ -218,17 +222,17 @@ export class ChunkData {
       pass.setBindGroup(i, bindings.heightmap[i]);
     }
     pass.dispatchWorkgroups(
-      Math.ceil(ChunkData.size / 8),
-      Math.ceil(ChunkData.size / 8),
+      Math.ceil((ChunkData.size + 2) / 8),
+      Math.ceil((ChunkData.size + 2) / 8),
     );
     pass.setPipeline(pipelines.generator);
     for (let i = 0, l = bindings.generator.length; i < l; i++) {
       pass.setBindGroup(i, bindings.generator[i]);
     }
     pass.dispatchWorkgroups(
-      Math.ceil(ChunkData.size / 4),
-      Math.ceil(ChunkData.size / 4),
-      Math.ceil(ChunkData.size / 4),
+      Math.ceil((ChunkData.size + 2) / 4),
+      Math.ceil((ChunkData.size * ChunkData.subChunks) / 4),
+      Math.ceil((ChunkData.size + 2) / 4),
     );
     this.needsUpdate = false;
   }
@@ -243,16 +247,18 @@ export class ChunkData {
     const { bindings, brush: buffer, data, pipelines, renderer } = this;
     const device = renderer.getDevice();
     device.queue.writeBuffer(buffer, 0, new Float32Array([
-      brush.position[0] + 1, brush.position[1] + 1, brush.position[2] + 1,
+      brush.position[0] + 1, brush.position[1], brush.position[2] + 1,
       brush.radius,
       ...(brush.erase ? [0.0, 0.0, 0.0] : [brush.color[0], brush.color[1], brush.color[2]]),
       brush.erase ? 1.0 : 0.0,
     ]));
     const commandEncoder = device.createCommandEncoder();
+    // @dani @incomplete
+    // Try to reduce the size of this copy to just the affected area
     commandEncoder.copyTextureToTexture(
       { texture: data },
       { texture: ChunkData.getInputData(renderer) },
-      { width: ChunkData.size, height: ChunkData.size, depthOrArrayLayers: ChunkData.size }
+      [ChunkData.size + 2, ChunkData.size * ChunkData.subChunks, ChunkData.size + 2],
     );
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(pipelines.update);

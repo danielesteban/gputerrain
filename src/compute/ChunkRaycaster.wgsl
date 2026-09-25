@@ -1,6 +1,7 @@
 @group(0) @binding(0) var dataTexture: texture_3d<f32>;
 @group(0) @binding(1) var dataSampler: sampler;
-@group(0) @binding(2) var<storage, read_write> raycast: Raycast;
+@group(0) @binding(2) var<uniform> dataSubchunk: f32;
+@group(0) @binding(3) var<storage, read_write> raycast: Raycast;
 
 @compute @workgroup_size(1)
 fn main() {

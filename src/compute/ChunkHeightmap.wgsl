@@ -1,16 +1,16 @@
 @group(0) @binding(0) var<storage, read_write> heightmap: array<f32, SIZE.x * SIZE.z>;
-@group(0) @binding(1) var<uniform> position: vec3f;
+@group(0) @binding(1) var<uniform> position: vec2f;
 
 @compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) id: vec3u) {
-  if (any(id >= SIZE)) {
+  if (any(id.xy >= SIZE.xz)) {
     return;
   }
 
-  let uv = position + (vec3f(f32(id.x), 0.0, f32(id.y)) - 0.5) / vec3f(SIZE - 2);
+  let uv = position + (vec2f(id.xy) - 0.5) / vec2f(SIZE.xz - 2);
   heightmap[id.y * SIZE.x + id.x] = clamp(
-    (FBM2D((uv).xz * NOISE_FREQUENCY + NOISE_SEED) * 0.5 + 0.5) * f32(SUBCHUNKS),
+    FBM2D(uv * NOISE_FREQUENCY + NOISE_SEED) * 0.5 + 0.5,
     0.0,
-    f32(SUBCHUNKS) - 4.0 / f32(SIZE.y - 2)
+    1.0 - 4.0 / f32(SIZE.y)
   );
 }

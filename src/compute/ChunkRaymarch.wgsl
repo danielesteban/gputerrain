@@ -2,7 +2,16 @@ const REFINEMENT_STEPS = 4;
 const THRESHOLD = 0.5;
 
 fn sample(p: vec3f) -> vec4f {
-  return textureSampleLevel(dataTexture, dataSampler, SAMPLE_OFFSET + p * SAMPLE_SCALE, 0);
+  return textureSampleLevel(
+    dataTexture,
+    dataSampler,
+    vec3f(
+      SAMPLE_OFFSET.x,
+      SAMPLE_OFFSET.y * dataSubchunk,
+      SAMPLE_OFFSET.z
+    ) + p * SAMPLE_SCALE,
+    0
+  );
 }
 
 fn hitBox(orig: vec3f, dir: vec3f) -> vec2f {

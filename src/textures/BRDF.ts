@@ -3,10 +3,7 @@ import PBRCode from 'textures/PBR.wgsl';
 
 export const BRDF = (device: GPUDevice, size = 512) => {
   const texture = device.createTexture({
-    size: {
-      width: size,
-      height: size,
-    },
+    size: [size, size],
     format: 'rg16float',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
   });

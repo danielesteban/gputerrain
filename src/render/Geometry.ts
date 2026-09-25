@@ -24,8 +24,8 @@ export class Geometry {
     });
     new Uint16Array(this.index.getMappedRange()).set(buffers.index);
     this.index.unmap();
-
     this.indexCount = buffers.index.length;
+  
     this.vertices = device.createBuffer({
       size: buffers.vertices.byteLength,
       usage: GPUBufferUsage.VERTEX,

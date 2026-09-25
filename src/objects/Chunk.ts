@@ -27,8 +27,8 @@ export class Chunk extends Mesh {
 
   private static getRaymarchCode() {
     let code = (
-      `const SAMPLE_OFFSET: vec3f = 1.0 / vec3f(${ChunkData.size});\n`
-      + `const SAMPLE_SCALE: vec3f = vec3f(${ChunkData.size - 2}) / vec3f(${ChunkData.size});\n`
+      `const SAMPLE_OFFSET: vec3f = vec3f(1.0 / ${ChunkData.size + 2}, 1.0 / ${ChunkData.subChunks}, 1.0 / ${ChunkData.size + 2});\n`
+      + `const SAMPLE_SCALE: vec3f = vec3f(${ChunkData.size}) / vec3f(${ChunkData.size + 2}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size + 2});\n`
       + ChunkRaymarchCode
     );
     return code;
@@ -51,11 +51,19 @@ export class Chunk extends Mesh {
     return Chunk.samplers;
   }
 
-  private readonly id: vec3;
   private readonly data: ChunkData;
+  private readonly dataSubchunk: GPUBuffer;
 
   constructor(renderer: Renderer, data: ChunkData, position: vec3, scale: vec3) {
+    const device = renderer.getDevice();
     const samplers = Chunk.getSamplers(renderer);
+    const dataSubchunk = device.createBuffer({
+      size: 4,
+      usage: GPUBufferUsage.UNIFORM,
+      mappedAtCreation: true,
+    });
+    new Float32Array(dataSubchunk.getMappedRange()).set([position[1]]);
+    dataSubchunk.unmap();
     super(
       renderer,
       renderer.getDefaultGeometry('Box'),
@@ -72,26 +80,29 @@ export class Chunk extends Mesh {
           },
           {
             binding: 2,
-            resource: renderer.getTexture('BRDF').createView(),
+            resource: dataSubchunk,
           },
           {
             binding: 3,
-            resource: renderer.getTexture('Irradiance').createView({ dimension: 'cube' }),
+            resource: renderer.getTexture('BRDF').createView(),
           },
           {
             binding: 4,
-            resource: renderer.getTexture('Prefiltered').createView({ dimension: 'cube' }),
+            resource: renderer.getTexture('Irradiance').createView({ dimension: 'cube' }),
           },
           {
             binding: 5,
+            resource: renderer.getTexture('Prefiltered').createView({ dimension: 'cube' }),
+          },
+          {
+            binding: 6,
             resource: samplers.texture,
           },
         ],
       }]
     );
-    data.setPosition(position);
-    this.id = position;
     this.data = data;
+    this.dataSubchunk = dataSubchunk;
     this.position = vec3.fromValues(
       position[0] * scale[0],
       position[1] * scale[1] + scale[1] * 0.5,
@@ -100,23 +111,16 @@ export class Chunk extends Mesh {
     this.scale = scale;
   }
 
-  getId() {
-    return this.id;
-  }
-
-  getData() {
-    return this.data;
-  }
-
-  compute(pass: GPUComputePassEncoder) {
-    const { data } = this;
-    data.compute(pass);
+  override destroy() {
+    const { dataSubchunk } = this;
+    dataSubchunk.destroy();
+    super.destroy();
   }
 
   private static readonly aux4 = vec3.create();
   private static readonly gpuRays: GPURay[] = [];
   override async raycast(ray: Ray, intersections: Intersection[]) {
-    const { data, renderer } = this;
+    const { data, dataSubchunk, renderer } = this;
     const { aux4: origin, gpuRays } = Chunk;
     const bounds = this.getBounds();
     const transform = this.getTransform();
@@ -162,6 +166,10 @@ export class Chunk extends Mesh {
         },
         {
           binding: 2,
+          resource: dataSubchunk,
+        },
+        {
+          binding: 3,
           resource: gpuRay.getInput(),
         },
       ],

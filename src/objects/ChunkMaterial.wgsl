@@ -2,10 +2,11 @@
 @group(0) @binding(1) var<uniform> transform: Transform;
 @group(1) @binding(0) var dataTexture: texture_3d<f32>;
 @group(1) @binding(1) var dataSampler: sampler;
-@group(1) @binding(2) var brdfTexture: texture_2d<f32>;
-@group(1) @binding(3) var irradianceTexture: texture_cube<f32>;
-@group(1) @binding(4) var prefilteredTexture: texture_cube<f32>;
-@group(1) @binding(5) var textureSampler: sampler;
+@group(1) @binding(2) var<uniform> dataSubchunk: f32;
+@group(1) @binding(3) var brdfTexture: texture_2d<f32>;
+@group(1) @binding(4) var irradianceTexture: texture_cube<f32>;
+@group(1) @binding(5) var prefilteredTexture: texture_cube<f32>;
+@group(1) @binding(6) var textureSampler: sampler;
 
 struct VertexInput {
   @location(0) position: vec3f,

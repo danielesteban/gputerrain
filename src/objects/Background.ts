@@ -30,11 +30,11 @@ export class Background extends Mesh {
       }
       const device = renderer.getDevice();
       const texture = device.createTexture({
-        size: { width: size, height: size },
+        size: [size, size],
         format: 'r32float',
         usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING,
       });
-      device.queue.writeTexture({ texture }, data, { bytesPerRow: size * 4 }, { width: size, height: size });
+      device.queue.writeTexture({ texture }, data, { bytesPerRow: size * 4 }, [size, size]);
       Background.noise = texture;
     }
     return Background.noise;

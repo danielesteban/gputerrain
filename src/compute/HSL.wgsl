@@ -22,7 +22,7 @@ fn hsl2rgb(hsl: vec3f) -> vec3f {
   var rgb: vec3f;
   
   if (hsl.y == 0.0) {
-    rgb = vec3(hsl.z); // Luminance
+    rgb = vec3(hsl.z);
   } else {
     var f2: f32;
     
