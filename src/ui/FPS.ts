@@ -9,9 +9,6 @@ export class FPS {
 
   update(time: number) {
     const { dom } = this;
-    if (!dom) {
-      return;
-    }
     this.count++;
     if (time >= this.clock + 1) {
       const count = `${Math.round(this.count / (time - this.clock))}fps`;

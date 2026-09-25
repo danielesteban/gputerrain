@@ -4,10 +4,6 @@ import { Frustum } from 'math/Frustum';
 export class Camera {
   static readonly GPUStruct = [
     'struct Camera {',
-    '  aspect: f32,',
-    '  fov: f32,',
-    '  near: f32,',
-    '  far: f32,',
     '  position: vec3f,',
     '  projection: mat4x4<f32>,',
     '  view: mat4x4<f32>,',
@@ -44,13 +40,9 @@ export class Camera {
     this.device = device;
     this.buffer = device.createBuffer({
       size: (
-        4 + // aspect
-        4 + // fov
-        4 + // near
-        4 + // far
-        (this._position as Float32Array).byteLength + 4 +
-        (this.projection as Float32Array).byteLength +
-        (this.view as Float32Array).byteLength
+        (this._position as Float32Array).byteLength + 4
+        + (this.projection as Float32Array).byteLength
+        + (this.view as Float32Array).byteLength
       ),
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
@@ -160,10 +152,6 @@ export class Camera {
     const {
       device,
       buffer,
-      aspect,
-      fov,
-      near,
-      far,
       _position,
     } = this;
     const projection = this.getProjection();
@@ -173,13 +161,9 @@ export class Camera {
     }
     this.bufferNeedsUpdate = false;  
     device.queue.writeBuffer(buffer, 0, new Float32Array([
-      aspect,
-      glMatrix.toRadian(fov),
-      near,
-      far,
       ..._position, 0,
       ...projection,
-      ...view
+      ...view,
     ]));
   }
 }
