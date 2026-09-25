@@ -1,3 +1,4 @@
+const RAYMARCH_STEPS = 200.0;
 const REFINEMENT_STEPS = 4;
 const THRESHOLD = 0.5;
 
@@ -35,15 +36,15 @@ fn normal(p: vec3f) -> vec3f {
   return normalize(vec3f(x, y, z));
 }
 
-fn raymarch(origin: vec3f, direction: vec3f, steps: f32) -> vec3f {
+fn raymarch(origin: vec3f, direction: vec3f) -> vec3f {
   var bounds = hitBox(origin, direction);
   if (bounds.x > bounds.y) {
     return vec3f(-1.0);
   }
   bounds.x = max(bounds.x, 0.0);
 
-  let stepSize = (bounds.y - bounds.x) / steps;
-  for (var i = 0.0; i < steps; i += 1.0) {
+  let stepSize = (bounds.y - bounds.x) / RAYMARCH_STEPS;
+  for (var i = 0.0; i < RAYMARCH_STEPS; i += 1.0) {
     let t = bounds.x + i * stepSize;
     var p = origin + t * direction;
     let d = sample(p + 0.5).w;

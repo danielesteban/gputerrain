@@ -175,7 +175,7 @@ export class Renderer {
     textures.Prefiltered = Prefiltered(device, textures.Environment);
   }
 
-  setSize(width: number, height: number, pixelRatio = window.devicePixelRatio) {
+  setSize(width: number, height: number, scale = 1, pixelRatio = window.devicePixelRatio) {
     const {
       camera,
       canvas,
@@ -198,7 +198,7 @@ export class Renderer {
       textures.depth.destroy();
     }
     textures.depth = device.createTexture({
-      size: [size.width, size.height],
+      size: [size.width * scale, size.height * scale],
       sampleCount,
       format: depthFormat,
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
@@ -208,13 +208,13 @@ export class Renderer {
     }
     if (sampleCount > 1) {
       textures.output = device.createTexture({
-        size: [size.width, size.height],
+        size: [size.width * scale, size.height * scale],
         sampleCount,
         format: colorFormat,
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
       });
     }
-    postprocessing.setSize(size.width, size.height);
+    postprocessing.setSize(size.width, size.height, scale, pixelRatio);
     return this;
   }
 

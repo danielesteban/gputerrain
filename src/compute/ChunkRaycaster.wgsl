@@ -5,7 +5,7 @@
 
 @compute @workgroup_size(1)
 fn main() {
-  raycast.position = raymarch(raycast.origin, raycast.direction, 200.0);
+  raycast.position = raymarch(raycast.origin, raycast.direction);
   if (raycast.position.x != -1.0) {
     raycast.normal = normal(raycast.position + 0.5);
   }

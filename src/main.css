@@ -31,7 +31,6 @@ body {
 }
 
 canvas {
-  image-rendering: pixelated;
   vertical-align: middle;
 }
 

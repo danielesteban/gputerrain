@@ -20,10 +20,8 @@ struct FragmentOutput {
   @location(0) color: vec4f,
 }
 
-const BLUR = 0.85;
-
 fn gaussian(uv: vec2f) -> vec4f {
-  let b = BLUR / resolution;
+  let b = 0.5 / vec2f(textureDimensions(inputTexture));
 
   var col = textureSample(inputTexture, inputSampler, vec2f(uv.x - b.x, uv.y - b.y)) * 0.077847;
   col += textureSample(inputTexture, inputSampler, vec2f(uv.x - b.x, uv.y)) * 0.123317;

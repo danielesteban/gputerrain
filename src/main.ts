@@ -83,7 +83,7 @@ Promise.all([
   };
   const onResize = () => {
     const rect = app.getBoundingClientRect();
-    renderer.setSize(rect.width, rect.height);
+    renderer.setSize(rect.width, rect.height, 0.5);
   };
   const onVisibility = () => {
     if (document.visibilityState === 'visible') {

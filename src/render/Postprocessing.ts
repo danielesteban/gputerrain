@@ -42,8 +42,8 @@ export class Postprocessing {
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
     });
     this.sampler = device.createSampler({
-      magFilter: 'nearest',
-      minFilter: 'nearest',
+      magFilter: 'linear',
+      minFilter: 'linear',
     });
   }
 
@@ -57,14 +57,14 @@ export class Postprocessing {
     return textures.input;
   }
 
-  setSize(width: number, height: number) {
+  setSize(width: number, height: number, scale: number, pixelRatio: number) {
     const { renderer, pipeline, resolution, sampler, textures } = this;
     const device = renderer.getDevice();
     if (textures.background) {
       textures.background.destroy();
     }
     textures.background = device.createTexture({
-      size: [width, height],
+      size: [width * scale, height * scale],
       format: renderer.getColorFormat(),
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
@@ -72,7 +72,7 @@ export class Postprocessing {
       textures.input.destroy();
     }
     textures.input = device.createTexture({
-      size: [width, height],
+      size: [width * scale, height * scale],
       format: renderer.getColorFormat(),
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
@@ -97,7 +97,7 @@ export class Postprocessing {
         },
       ],
     });
-    device.queue.writeBuffer(resolution, 0, new Float32Array([width, height]));
+    device.queue.writeBuffer(resolution, 0, new Float32Array([width / pixelRatio, height / pixelRatio]));
     return this;
   }
 

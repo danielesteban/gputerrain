@@ -88,8 +88,7 @@ fn vert_main(vertex: VertexInput) -> VertexOutput {
 
 @fragment
 fn frag_main(fragment: FragmentInput) -> FragmentOutput {
-  let steps = clamp(200.0 / (length(fragment.origin) * 2.0), 100.0, 200.0);
-  let p = raymarch(fragment.origin, normalize(fragment.direction), steps);
+  let p = raymarch(fragment.origin, normalize(fragment.direction));
   if (p.x == -1.0) {
     discard;
   }
