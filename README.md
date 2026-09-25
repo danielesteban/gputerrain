@@ -1,12 +1,12 @@
-[chunked-volumes](https://chunked-volumes.gatunes.com)
+[gputerrain](https://gputerrain.gatunes.com)
 ==
 
 #### Local development
 
 ```bash
 # clone this repo
-git clone https://github.com/danielesteban/chunked-volumes.git
-cd chunked-volumes
+git clone https://github.com/danielesteban/gputerrain.git
+cd gputerrain
 # install dependencies
 pnpm install
 # start the dev environment:

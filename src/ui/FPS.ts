@@ -1,14 +1,10 @@
 export class FPS {
-  private readonly dom: HTMLElement | null = null;
+  private readonly dom: HTMLElement;
   private clock = performance.now() / 1000;
   private count = 0;
 
   constructor() {
-    if (!!localStorage.getItem('debug')) {
-      this.dom = document.createElement('div');
-      this.dom.id = 'fps';
-      document.body.appendChild(this.dom);
-    }
+    this.dom = document.getElementById('fps')!;
   }
 
   update(time: number) {
@@ -18,7 +14,7 @@ export class FPS {
     }
     this.count++;
     if (time >= this.clock + 1) {
-      const count = `${Math.round(this.count / (time - this.clock))}`;
+      const count = `${Math.round(this.count / (time - this.clock))}fps`;
       if (dom.innerText !== count) {
         dom.innerText = count;
       }

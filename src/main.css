@@ -8,7 +8,7 @@ body {
   background: #000;
   color: #eee;
   cursor: default;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: monospace;
   font-optical-sizing: auto;
   font-size: 0.75rem;
   font-style: normal;
@@ -28,6 +28,10 @@ body {
 :root, body, #app {
   width: 100%;
   height: 100%;
+}
+
+a {
+  color: inherit;
 }
 
 canvas {
@@ -59,11 +63,13 @@ body.pointerlock #cursor {
   color: #e99;
 }
 
-#fps {
+#info {
   position: absolute;
-  top: 0.5rem;
-  right: 1.5rem;
-  font-size: 3rem;
-  line-height: 4.5rem;
-  font-weight: 700;
+  bottom: 1rem;
+  right: 1rem;
+  text-align: right;
+}
+
+body.pointerlock #info {
+  display: none;
 }
