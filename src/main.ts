@@ -14,10 +14,10 @@ const app = document.getElementById('app')!;
 const canvas = document.createElement('canvas');
 
 Promise.all([
-  Renderer.create(canvas),
   await HDR(Environment),
+  Renderer.create(canvas),
 ])
-.then(([renderer, environment]) => {
+.then(([environment, renderer]) => {
   renderer.setEnvironment(environment);
 
   let clock: number;

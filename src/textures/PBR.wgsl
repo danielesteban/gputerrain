@@ -1,13 +1,3 @@
-fn DistributionGGX(n: vec3f, h: vec3f, roughness: f32) -> f32 {
-  let a = roughness * roughness;
-  let a2 = a * a;
-  let nDotH = max(dot(n, h), 0.0);
-  let nDotH2 = nDotH * nDotH;
-  var denom = (nDotH2 * (a2 - 1.0) + 1.0);
-  denom = PI * denom * denom;
-  return a2 / denom;
-}
-
 fn RadicalInverse_VdC(bits: u32) -> f32 {
   var result: u32;
   result = (bits << 16u) | (bits >> 16u);

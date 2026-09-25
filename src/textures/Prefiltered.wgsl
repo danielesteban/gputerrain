@@ -25,6 +25,16 @@ struct FragmentOutput {
   @location(0) color: vec4f,
 }
 
+fn DistributionGGX(n: vec3f, h: vec3f, roughness: f32) -> f32 {
+  let a = roughness * roughness;
+  let a2 = a * a;
+  let nDotH = max(dot(n, h), 0.0);
+  let nDotH2 = nDotH * nDotH;
+  var denom = (nDotH2 * (a2 - 1.0) + 1.0);
+  denom = PI * denom * denom;
+  return a2 / denom;
+}
+
 @vertex
 fn vert_main(vertex: VertexInput) -> VertexOutput {
   var output: VertexOutput;
