@@ -267,6 +267,10 @@ export class ChunkData {
       Math.ceil((ChunkData.size + 2) / 8),
       Math.ceil((ChunkData.size + 2) / 8),
     );
+    // @dani @incomplete
+    // Generate a second noise map in the previous stage
+    // to cover the floor up to height ~= 4
+    // and merge it in with the noise in the next stage
     pass.setPipeline(pipelines.generator);
     for (let i = 0, l = bindings.generator.length; i < l; i++) {
       pass.setBindGroup(i, bindings.generator[i]);
