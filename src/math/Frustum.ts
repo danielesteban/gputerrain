@@ -27,6 +27,7 @@ export class Frustum {
     planes[3].set(m[3] - m[1], m[7] - m[5], m[11] - m[9], m[15] - m[13]).normalize();
     planes[4].set(m[3] - m[2], m[7] - m[6], m[11] - m[10], m[15] - m[14]).normalize(); 
     planes[5].set(m[3] + m[2], m[7] + m[6], m[11] + m[10], m[15] + m[14]).normalize();
+    return this;
   }
 }
 
