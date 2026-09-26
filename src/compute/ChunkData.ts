@@ -280,6 +280,12 @@ export class ChunkData {
       Math.ceil((ChunkData.size * ChunkData.subChunks) / 4),
       Math.ceil((ChunkData.size + 2) / 4),
     );
+    this.computeHeightmap(pass);
+    this.needsUpdate = false;
+  }
+
+  private computeHeightmap(pass: GPUComputePassEncoder) {
+    const { bindings, pipelines } = this;
     pass.setPipeline(pipelines.heightmap);
     for (let i = 0, l = bindings.heightmap.length; i < l; i++) {
       pass.setBindGroup(i, bindings.heightmap[i]);
@@ -288,7 +294,6 @@ export class ChunkData {
       Math.ceil(ChunkData.size / 8),
       Math.ceil(ChunkData.size / 8),
     );
-    this.needsUpdate = false;
   }
 
   update(brush: {
@@ -326,14 +331,7 @@ export class ChunkData {
     );
     // @dani @incomplete
     // Try to reduce the size of this update to just the affected area
-    pass.setPipeline(pipelines.heightmap);
-    for (let i = 0, l = bindings.heightmap.length; i < l; i++) {
-      pass.setBindGroup(i, bindings.heightmap[i]);
-    }
-    pass.dispatchWorkgroups(
-      Math.ceil(ChunkData.size / 8),
-      Math.ceil(ChunkData.size / 8),
-    );
+    this.computeHeightmap(pass);
     pass.end();
     device.queue.submit([commandEncoder.finish()]);
   }
