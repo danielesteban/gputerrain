@@ -14,7 +14,7 @@ const app = document.getElementById('app')!;
 const canvas = document.createElement('canvas');
 
 Promise.all([
-  await HDR(Environment),
+  HDR(Environment),
   Renderer.create(canvas),
 ])
 .then(([environment, renderer]) => {
