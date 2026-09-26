@@ -1,6 +1,7 @@
 import { vec2, vec3 } from 'gl-matrix';
 import { ChunkData } from 'compute/ChunkData';
 import { Chunk } from 'objects/Chunk';
+import { Rain } from 'objects/Rain';
 import type { Renderer } from 'render/Renderer';
 
 export class World {
@@ -27,11 +28,20 @@ export class World {
   private readonly cameraChunk = vec2.fromValues(Infinity, Infinity);
   private readonly chunkData: ChunkData[];
   private readonly chunks = new Map<string, { data: ChunkData, subchunks: Chunk[] }>();
+  private readonly rain: Rain;
   private readonly renderer: Renderer;
 
   constructor(renderer: Renderer) {
-    this.chunkData = Array.from({ length: World.chunkGrid.length }, () => new ChunkData(renderer));
     this.renderer = renderer;
+    this.chunkData = Array.from({ length: World.chunkGrid.length }, () => new ChunkData(renderer));
+    this.rain = new Rain(renderer);
+    renderer.addObject(this.rain);
+    // @dani @incomplete
+    // Keep rain disabled by default
+    // Until I add the SFX
+    if (!localStorage.getItem('rain')) {
+      this.rain.visible = false;
+    }
   }
 
   getChunks(): Chunk[] {
@@ -82,10 +92,22 @@ export class World {
   }
 
   compute(pass: GPUComputePassEncoder) {
-    const { chunks } = this;
+    const { cameraChunk, chunks, rain } = this;
     for (const chunk of chunks.values()) {
       chunk.data.compute(pass);
     }
+
+    const heightmaps: GPUBuffer[] = [];
+    for (let z = -1; z <= 1; z++) {
+      for (let x = -1; x <= 1; x++) {
+        const chunk = chunks.get(`${cameraChunk[0] + x}:${cameraChunk[1] + z}`);
+        if (!chunk) {
+          return;
+        }
+        heightmaps.push(chunk.data.getHeightmap());
+      }
+    }
+    rain.getData().compute(pass, heightmaps, cameraChunk);
   }
 
   private static readonly aux2 = vec2.create();

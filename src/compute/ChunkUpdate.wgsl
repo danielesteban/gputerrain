@@ -22,7 +22,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   }
   let c = textureLoad(input, p);
   let d = min(brush.radius - l, 4.0) / 4.0;
-  if (brush.erase == 1.0) { 
+  if (brush.erase == 1.0) {
     textureStore(data, p, vec4f(c.xyz, min(c.w, 1 - d)));
   } else {
     let cd = min(brush.radius - l, 3.0) / 3.0;

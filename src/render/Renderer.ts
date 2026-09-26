@@ -22,6 +22,9 @@ export class Renderer {
       throw new Error("Couldn't get GPUAdapter");
     }
     const device = await adapter.requestDevice({
+      requiredLimits: {
+        maxStorageBuffersPerShaderStage: 10,
+      },
       requiredFeatures: ['float32-filterable'],
     });
     if (!device) {

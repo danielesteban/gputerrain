@@ -1,5 +1,6 @@
 import { vec2, vec3 } from 'gl-matrix';
 import ChunkGeneratorCode from 'compute/ChunkGenerator.wgsl';
+import ChunkGeneratorHeightmapCode from 'compute/ChunkGeneratorHeightmap.wgsl';
 import ChunkHeightmapCode from 'compute/ChunkHeightmap.wgsl';
 import ChunkUpdateCode from 'compute/ChunkUpdate.wgsl';
 import HSLCode from 'compute/HSL.wgsl';
@@ -40,15 +41,18 @@ export class ChunkData {
   private readonly renderer: Renderer;
   private readonly brush: GPUBuffer;
   private readonly data: GPUTexture;
+  private readonly generatorHeightmap: GPUBuffer;
   private readonly heightmap: GPUBuffer;
   private readonly position: GPUBuffer;
   private readonly pipelines: {
     generator: GPUComputePipeline;
+    generatorHeightmap: GPUComputePipeline;
     heightmap: GPUComputePipeline;
     update: GPUComputePipeline;
   };
   private readonly bindings: {
     generator: GPUBindGroup[];
+    generatorHeightmap: GPUBindGroup[];
     heightmap: GPUBindGroup[];
     update: GPUBindGroup[];
   };
@@ -71,8 +75,12 @@ export class ChunkData {
       format: 'rgba8unorm',
       usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
     });
-    this.heightmap = device.createBuffer({
+    this.generatorHeightmap = device.createBuffer({
       size: (ChunkData.size + 2) * (ChunkData.size + 2) * 4,
+      usage: GPUBufferUsage.STORAGE,
+    });
+    this.heightmap = device.createBuffer({
+      size: ChunkData.size * ChunkData.size * 4,
       usage: GPUBufferUsage.STORAGE,
     });
     this.position = device.createBuffer({
@@ -100,9 +108,9 @@ export class ChunkData {
           },
         })
       )),
-      heightmap: renderer.getComputePipeline('ChunkHeightmap', () => (
+      generatorHeightmap: renderer.getComputePipeline('ChunkGeneratorHeightmap', () => (
         device.createComputePipeline({
-          label: 'ChunkHeightmap',
+          label: 'ChunkGeneratorHeightmap',
           layout: 'auto',
           compute: {
             module: device.createShaderModule({
@@ -111,6 +119,20 @@ export class ChunkData {
                 + `const NOISE_SEED: f32 = ${ChunkData.noise.heightmapSeed};\n`
                 + `const SIZE: vec3u = vec3u(${ChunkData.size + 2}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size + 2});\n`
                 + NoiseCode
+                + ChunkGeneratorHeightmapCode
+              ),
+            }),
+          },
+        })
+      )),
+      heightmap: renderer.getComputePipeline('ChunkHeightmap', () => (
+        device.createComputePipeline({
+          label: 'ChunkHeightmap',
+          layout: 'auto',
+          compute: {
+            module: device.createShaderModule({
+              code: (
+                `const SIZE: vec3u = vec3u(${ChunkData.size}, ${ChunkData.size * ChunkData.subChunks}, ${ChunkData.size});\n`
                 + ChunkHeightmapCode
               ),
             }),
@@ -143,10 +165,25 @@ export class ChunkData {
             },
             {
               binding: 1,
-              resource: this.heightmap,
+              resource: this.generatorHeightmap,
             },
             {
               binding: 2,
+              resource: this.position,
+            }
+          ],
+        }),
+      ],
+      generatorHeightmap: [
+        device.createBindGroup({
+          layout: this.pipelines.generatorHeightmap.getBindGroupLayout(0),
+          entries: [
+            {
+              binding: 0,
+              resource: this.generatorHeightmap,
+            },
+            {
+              binding: 1,
               resource: this.position,
             }
           ],
@@ -158,11 +195,11 @@ export class ChunkData {
           entries: [
             {
               binding: 0,
-              resource: this.heightmap,
+              resource: this.data.createView(),
             },
             {
               binding: 1,
-              resource: this.position,
+              resource: this.heightmap,
             }
           ],
         }),
@@ -190,9 +227,10 @@ export class ChunkData {
   }
 
   destroy() {
-    const { brush, data, heightmap, position } = this;
+    const { brush, data, generatorHeightmap, heightmap, position } = this;
     brush.destroy();
     data.destroy();
+    generatorHeightmap.destroy();
     heightmap.destroy();
     position.destroy();
   }
@@ -212,14 +250,18 @@ export class ChunkData {
     return this.data;
   }
 
+  getHeightmap() {
+    return this.heightmap;
+  }
+
   compute(pass: GPUComputePassEncoder) {
     if (!this.needsUpdate) {
       return;
     }
     const { bindings, pipelines } = this;
-    pass.setPipeline(pipelines.heightmap);
-    for (let i = 0, l = bindings.heightmap.length; i < l; i++) {
-      pass.setBindGroup(i, bindings.heightmap[i]);
+    pass.setPipeline(pipelines.generatorHeightmap);
+    for (let i = 0, l = bindings.generatorHeightmap.length; i < l; i++) {
+      pass.setBindGroup(i, bindings.generatorHeightmap[i]);
     }
     pass.dispatchWorkgroups(
       Math.ceil((ChunkData.size + 2) / 8),
@@ -233,6 +275,14 @@ export class ChunkData {
       Math.ceil((ChunkData.size + 2) / 4),
       Math.ceil((ChunkData.size * ChunkData.subChunks) / 4),
       Math.ceil((ChunkData.size + 2) / 4),
+    );
+    pass.setPipeline(pipelines.heightmap);
+    for (let i = 0, l = bindings.heightmap.length; i < l; i++) {
+      pass.setBindGroup(i, bindings.heightmap[i]);
+    }
+    pass.dispatchWorkgroups(
+      Math.ceil(ChunkData.size / 8),
+      Math.ceil(ChunkData.size / 8),
     );
     this.needsUpdate = false;
   }
@@ -260,17 +310,27 @@ export class ChunkData {
       { texture: ChunkData.getInputData(renderer) },
       [ChunkData.size + 2, ChunkData.size * ChunkData.subChunks, ChunkData.size + 2],
     );
-    const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(pipelines.update);
+    const pass = commandEncoder.beginComputePass();
+    pass.setPipeline(pipelines.update);
     for (let i = 0, l = bindings.update.length; i < l; i++) {
-      passEncoder.setBindGroup(i, bindings.update[i]);
+      pass.setBindGroup(i, bindings.update[i]);
     }
-    passEncoder.dispatchWorkgroups(
+    pass.dispatchWorkgroups(
       Math.ceil((brush.radius * 2 + 1) / 4),
       Math.ceil((brush.radius * 2 + 1) / 4),
       Math.ceil((brush.radius * 2 + 1) / 4)
     );
-    passEncoder.end();
+    // @dani @incomplete
+    // Try to reduce the size of this update to just the affected area
+    pass.setPipeline(pipelines.heightmap);
+    for (let i = 0, l = bindings.heightmap.length; i < l; i++) {
+      pass.setBindGroup(i, bindings.heightmap[i]);
+    }
+    pass.dispatchWorkgroups(
+      Math.ceil(ChunkData.size / 8),
+      Math.ceil(ChunkData.size / 8),
+    );
+    pass.end();
     device.queue.submit([commandEncoder.finish()]);
   }
 }

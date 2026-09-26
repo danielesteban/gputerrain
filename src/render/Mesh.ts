@@ -8,6 +8,7 @@ import type { Renderer } from 'render/Renderer';
 export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends Material = Material> {
   protected readonly renderer: Renderer;
   private readonly bindings: GPUBindGroup[];
+  private readonly buffers: GPUBuffer[];
   private readonly geometry: GeometryType;
   private readonly material: MaterialType;
   
@@ -31,6 +32,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
   private readonly _scale = vec3.fromValues(1, 1, 1);
 
   frustumCulled = true;
+  instanceCount = 1;
   renderOrder = 0;
   visible = true;
 
@@ -39,6 +41,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     geometry: GeometryType,
     material: MaterialType,
     bindings: Omit<GPUBindGroupDescriptor, 'layout'>[] = [],
+    buffers: GPUBuffer[] = [],
   ) {
     const device = renderer.getDevice();
     this.renderer = renderer;
@@ -81,6 +84,7 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
         })
       )),
     ];
+    this.buffers = buffers;
   }
 
   destroy() {
@@ -191,9 +195,9 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
   }
 
   render(pass: GPURenderPassEncoder) {
-    const { bindings, geometry, material, visible } = this;
+    const { bindings, buffers, geometry, instanceCount, material, visible } = this;
     if (!visible) return;
-    material.render(pass, bindings, geometry);
+    material.render(pass, bindings, buffers, geometry, instanceCount);
   }
 }
 

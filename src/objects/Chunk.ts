@@ -154,9 +154,9 @@ export class Chunk extends Mesh {
     gpuRay.setInput(origin, ray.direction);
     const samplers = Chunk.getSamplers(renderer);
     const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginComputePass();
-    passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, device.createBindGroup({
+    const pass = commandEncoder.beginComputePass();
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
         {
@@ -177,8 +177,8 @@ export class Chunk extends Mesh {
         },
       ],
     }));
-    passEncoder.dispatchWorkgroups(1);
-    passEncoder.end();
+    pass.dispatchWorkgroups(1);
+    pass.end();
     gpuRay.copyInputToOutput(commandEncoder);
     device.queue.submit([commandEncoder.finish()]);
     const { position, normal } = await gpuRay.readOutput();
