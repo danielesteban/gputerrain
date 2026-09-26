@@ -4,8 +4,9 @@ import ChunkRaycasterCode from 'compute/ChunkRaycaster.wgsl';
 import ChunkRaymarchCode from 'compute/ChunkRaymarch.wgsl';
 import { type Intersection, type Ray, GPURay } from 'compute/Raycaster';
 import ChunkMaterialCode from 'objects/ChunkMaterial.wgsl';
+import { CameraGPUStruct } from 'render/Camera';
 import { Material } from 'render/Material';
-import { Mesh } from 'render/Mesh';
+import { Mesh, TransformGPUStruct } from 'render/Mesh';
 import type { Renderer } from 'render/Renderer';
 
 export class Chunk extends Mesh {
@@ -16,7 +17,9 @@ export class Chunk extends Mesh {
         renderer,
         key: 'ChunkMaterial',
         code: (
-          Chunk.getRaymarchCode()
+          CameraGPUStruct
+          + TransformGPUStruct
+          + Chunk.getRaymarchCode()
           + ChunkMaterialCode
         ),
         cullMode: 'front',

@@ -6,13 +6,6 @@ import type { Material } from 'render/Material';
 import type { Renderer } from 'render/Renderer';
 
 export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends Material = Material> {
-  static readonly GPUStruct = [
-    'struct Transform {',
-    '  matrix: mat4x4<f32>,',
-    '  inverse: mat4x4<f32>,',
-    '}',
-  ].join('\n');
-
   protected readonly renderer: Renderer;
   private readonly bindings: GPUBindGroup[];
   private readonly geometry: GeometryType;
@@ -203,3 +196,10 @@ export class Mesh<GeometryType extends Geometry = Geometry, MaterialType extends
     material.render(pass, bindings, geometry);
   }
 }
+
+export const TransformGPUStruct = /* wgsl */`
+struct Transform {
+  matrix: mat4x4<f32>,
+  inverse: mat4x4<f32>,
+}
+`;

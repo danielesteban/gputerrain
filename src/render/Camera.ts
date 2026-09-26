@@ -2,13 +2,6 @@ import { glMatrix, mat4, vec3 } from 'gl-matrix';
 import { Frustum } from 'math/Frustum';
 
 export class Camera {
-  static readonly GPUStruct = [
-    'struct Camera {',
-    '  position: vec3f,',
-    '  projection: mat4x4<f32>,',
-    '  view: mat4x4<f32>,',
-    '}',
-  ].join('\n');
   static readonly up = vec3.fromValues(0, 1, 0);
 
   private readonly device: GPUDevice;
@@ -167,3 +160,11 @@ export class Camera {
     ]));
   }
 }
+
+export const CameraGPUStruct = /* wgsl */`
+struct Camera {
+  position: vec3f,
+  projection: mat4x4<f32>,
+  view: mat4x4<f32>,
+}
+`;

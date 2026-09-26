@@ -1,6 +1,4 @@
-import { Camera } from 'render/Camera';
-import { Mesh } from 'render/Mesh';
-import type { Geometry } from 'render/Geometry';
+import { Geometry } from 'render/Geometry';
 import type { Renderer } from 'render/Renderer';
 
 export class Material {
@@ -10,26 +8,7 @@ export class Material {
     renderer,
     key,
     code,
-    buffers = [{
-      arrayStride: 32,
-      attributes: [
-        {
-          shaderLocation: 0,
-          offset: 0,
-          format: 'float32x3',
-        },
-        {
-          shaderLocation: 1,
-          offset: 12,
-          format: 'float32x3',
-        },
-        {
-          shaderLocation: 2,
-          offset: 24,
-          format: 'float32x2',
-        },
-      ],
-    }],
+    buffers = [Geometry.GPUVertexLayout],
     cullMode = 'back',
     depth = true,
     multisample = true,
@@ -44,15 +23,7 @@ export class Material {
   }) {
     this.pipeline = renderer.getRenderPipeline(key, () => {
       const device = renderer.getDevice();
-      const module = device.createShaderModule({
-        code: (
-          // @dani @incomplete
-          // Make this configurable/optional
-          Camera.GPUStruct + '\n'
-          + Mesh.GPUStruct + '\n'
-          + code
-        ),
-      });
+      const module = device.createShaderModule({ code });
       return device.createRenderPipeline({
         label: key,
         layout: 'auto',

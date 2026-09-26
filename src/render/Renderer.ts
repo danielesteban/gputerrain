@@ -173,6 +173,7 @@ export class Renderer {
       textures.Prefiltered.destroy();
     }
     textures.Prefiltered = Prefiltered(device, textures.Environment);
+    return this;
   }
 
   setSize(width: number, height: number, scale = 1, pixelRatio = window.devicePixelRatio) {

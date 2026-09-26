@@ -1,7 +1,8 @@
 import { vec3 } from 'gl-matrix';
 import BackgroundMaterialCode from 'objects/BackgroundMaterial.wgsl';
+import { CameraGPUStruct } from 'render/Camera';
 import { Material } from 'render/Material';
-import { Mesh } from 'render/Mesh';
+import { Mesh, TransformGPUStruct } from 'render/Mesh';
 import type { Renderer } from 'render/Renderer';
 
 export class Background extends Mesh {
@@ -11,7 +12,11 @@ export class Background extends Mesh {
       Background.material = new Material({
         renderer,
         key: 'BackgroundMaterial',
-        code: BackgroundMaterialCode,
+        code: (
+          CameraGPUStruct
+          + TransformGPUStruct
+          + BackgroundMaterialCode
+        ),
         cullMode: 'front',
         depth: false,
         multisample: false,

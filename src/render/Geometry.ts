@@ -4,6 +4,27 @@ import { Sphere } from 'math/Sphere';
 import type { Renderer } from 'render/Renderer';
 
 export class Geometry {
+  static readonly GPUVertexLayout: GPUVertexBufferLayout = {
+    arrayStride: 32,
+    attributes: [
+      {
+        shaderLocation: 0,
+        offset: 0,
+        format: 'float32x3',
+      },
+      {
+        shaderLocation: 1,
+        offset: 12,
+        format: 'float32x3',
+      },
+      {
+        shaderLocation: 2,
+        offset: 24,
+        format: 'float32x2',
+      },
+    ],
+  };
+
   private readonly bounds = new Sphere();
   private readonly buffers: { index: Uint16Array; vertices: Float32Array };
   private readonly index: GPUBuffer;
