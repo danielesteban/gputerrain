@@ -54,14 +54,12 @@ fn frag_main(fragment: FragmentInput) -> FragmentOutput {
   var prefilteredColor = vec3f(0.0, 0.0, 0.0);
   var totalWeight = 0.0;
 
-  for (var i: u32 = 0u; i < SAMPLE_COUNT; i = i + 1u) {
+  for (var i: u32 = 0u; i < SAMPLE_COUNT; i++) {
     let xi = Hammersley(i, SAMPLE_COUNT);
     let h = ImportanceSampleGGX(xi, n, params.roughness);
     let l = normalize(2.0 * dot(v, h) * h - v);
-
     let nDotL = max(dot(n, l), 0.0);
-
-    if(nDotL > 0.0) {
+    if (nDotL > 0.0) {
       let d = DistributionGGX(n, h, params.roughness);
       let nDotH = max(dot(n, h), 0.0);
       let hDotV = max(dot(h, v), 0.0);

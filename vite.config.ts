@@ -6,7 +6,6 @@ import { defineConfig } from 'vite';
 const srcPath = path.join(path.dirname(url.fileURLToPath(import.meta.url)), 'src');
 
 export default defineConfig(({ mode }) => ({
-  assetsInclude: ['**/*.hdr'],
   build: {
     rolldownOptions: {
       output: {
