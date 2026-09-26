@@ -1,8 +1,8 @@
 import { vec3 } from 'gl-matrix';
 import { RainData } from 'compute/RainData';
 import RainMaterialCode from 'objects/RainMaterial.wgsl';
-import { Geometry } from 'render/Geometry';
 import { CameraGPUStruct } from 'render/Camera';
+import { Geometry } from 'render/Geometry';
 import { Material } from 'render/Material';
 import { Mesh, TransformGPUStruct } from 'render/Mesh';
 import type { Renderer } from 'render/Renderer';
