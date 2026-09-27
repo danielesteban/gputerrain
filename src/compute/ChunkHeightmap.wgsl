@@ -9,7 +9,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
   var height = 0.0;
   for (var i: i32 = i32(SIZE.y - 1); i >= 0; i--) {
-    let d = textureLoad(data, vec3u(id.x, u32(i), id.y)).w;
+    let d = textureLoad(data, vec3u(id.x + 1, u32(i), id.y + 1)).w;
     if (d > 0.5) {
       height = f32(i + 1) / f32(SIZE.y);
       break;
