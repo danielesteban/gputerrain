@@ -1,7 +1,7 @@
-import type { vec2 } from 'gl-matrix';
 import { ChunkData } from 'compute/ChunkData';
 import NoiseCode from 'compute/Noise.wgsl';
 import RainDataCode from 'compute/RainData.wgsl';
+import type { World } from 'objects/World';
 import { CameraGPUStruct } from 'render/Camera';
 import type { Renderer } from 'render/Renderer';
 
@@ -9,12 +9,14 @@ export class RainData {
   static readonly instanceCount = 100000;
 
   private readonly bindings: GPUBindGroup[];
+  private heightmaps?: GPUBindGroup;
   private readonly instances: GPUBuffer;
   private readonly params: GPUBuffer;
   private readonly pipeline: GPUComputePipeline;
   private readonly renderer: Renderer;
+  private readonly world: World;
 
-  constructor(renderer: Renderer) {
+  constructor(renderer: Renderer, world: World) {
     const device = renderer.getDevice();
     this.instances = device.createBuffer({
       size: RainData.instanceCount * 4 * 4,
@@ -65,37 +67,69 @@ export class RainData {
       }),
     ];
     this.renderer = renderer;
+    this.world = world;
+    this.updateHeightmaps = this.updateHeightmaps.bind(this);
+    world.addEventListener('cameraChunk', this.updateHeightmaps);
   }
 
   destroy() {
-    const { instances, params } = this;
+    const { instances, params, world } = this;
     instances.destroy();
     params.destroy();
+    world.removeEventListener('cameraChunk', this.updateHeightmaps);
   }
 
   getInstances() {
     return this.instances;
   }
 
-  compute(pass: GPUComputePassEncoder, heightmaps: GPUBuffer[], origin: vec2) {
-    const { bindings, pipeline, params, renderer } = this;
+  animate(delta: number, _time: number) {
+    const { params, renderer } = this;
     const device = renderer.getDevice();
-    device.queue.writeBuffer(params, 0, new Float32Array([
-      ...origin,
+    device.queue.writeBuffer(params, 2 * 4, new Float32Array([
       1337 * Math.random(),
-      1,
+      64 * delta,
     ]));
+  }
+
+  compute(pass: GPUComputePassEncoder) {
+    const { bindings, heightmaps, pipeline } = this;
+    if (!heightmaps) {
+      return;
+    }
     pass.setPipeline(pipeline);
     for (let i = 0, l = bindings.length; i < l; i++) {
       pass.setBindGroup(i, bindings[i]);
     }
-    pass.setBindGroup(bindings.length, device.createBindGroup({
+    pass.setBindGroup(bindings.length, heightmaps);
+    pass.dispatchWorkgroups(Math.ceil(RainData.instanceCount / 64));
+  }
+
+  private updateHeightmaps() {
+    const { bindings, params, renderer, world } = this;
+    const device = renderer.getDevice();
+
+    const cameraChunk = world.getCameraChunk();
+    device.queue.writeBuffer(params, 0, new Float32Array([
+      ...cameraChunk,
+    ]));
+
+    const heightmaps: GPUBuffer[] = [];
+    for (let z = -1; z <= 1; z++) {
+      for (let x = -1; x <= 1; x++) {
+        const chunk = world.getChunk(cameraChunk[0] + x, cameraChunk[1] + z);
+        if (!chunk) {
+          return;
+        }
+        heightmaps.push(chunk.data.getHeightmap());
+      }
+    }
+    this.heightmaps = device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(bindings.length),
       entries: heightmaps.map((heightmap, i) => ({
         binding: i,
         resource: heightmap,
       })),
-    }));
-    pass.dispatchWorkgroups(Math.ceil(RainData.instanceCount / 64));
+    });
   }
 }

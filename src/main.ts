@@ -5,9 +5,12 @@ import { Input } from 'compute/Input';
 import { Raycaster } from 'compute/Raycaster';
 import { Grid } from 'objects/Grid';
 // import { Debug } from 'objects/Debug';
+import { Rain } from 'objects/Rain';
 import { World } from 'objects/World';
 import { Renderer } from 'render/Renderer';
+import { SFX } from 'sounds/SFX';
 import Environment from 'textures/citrus_orchard_road_puresky_2k.jpg';
+import { SetupControls } from 'ui/Controls';
 import { FPS } from 'ui/FPS';
 
 const app = document.getElementById('app')!;
@@ -26,15 +29,18 @@ Promise.all([
   const fps = new FPS();
   const input = new Input(renderer);
   const raycaster = new Raycaster();
+  const sfx = new SFX();
 
-  const grid = new Grid(renderer);
   // const debug = new Debug(renderer);
   const world = new World(renderer);
+  const grid = new Grid(renderer);
+  const rain = new Rain(renderer, sfx, world);
 
   renderer
-    .addObject(grid)
     // .addObject(debug)
-    .addObject(world);
+    .addObject(world)
+    .addObject(grid)
+    .addObject(rain);
 
   const onFrame = () => {
     frame = requestAnimationFrame(onFrame);
@@ -46,6 +52,7 @@ Promise.all([
 
     const pointer = input.getPointer();
     input.update(delta);
+    sfx.update(delta);
 
     renderer
       .animate(delta, time)
@@ -55,7 +62,7 @@ Promise.all([
     if (pointer.primaryDown || pointer.secondaryDown) {
       raycaster
         .setFromCamera(renderer.getCamera())
-        .intersect([...world.getChunks(), grid])
+        .intersect([...world.getSubChunks(), grid])
         .then((hit) => {
           if (!hit) {
             // debug.visible = false;
@@ -98,6 +105,7 @@ Promise.all([
   document.addEventListener('visibilitychange', onVisibility);
   onResize();
   app.appendChild(canvas);
+  SetupControls(rain);
 
   clock = performance.now() / 1000;
   frame = requestAnimationFrame(onFrame);

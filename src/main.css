@@ -34,8 +34,63 @@ a {
   color: inherit;
 }
 
-canvas {
+button {
+  cursor: pointer;
+}
+
+canvas, svg {
   vertical-align: middle;
+}
+
+#controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: none;
+  gap: 0.5rem;
+}
+
+#controls.enabled {
+  display: flex;
+}
+
+body.pointerlock #controls {
+  display: none;
+}
+
+#controls > button {
+  display: flex;
+  color: inherit;
+  background: #000;
+  border-radius: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #000;
+  overflow: hidden;
+}
+
+#rain > svg {
+  padding: 0.3125rem 0.75rem;
+}
+
+#rain > svg:nth-child(1) {
+  color: #fff;
+  background: #000;
+}
+
+#rain > svg:nth-child(2) {
+  color: #000;
+  background: #fff;
+}
+
+#rain.enabled > svg:nth-child(1) {
+  color: #000;
+  background: #fff;
+}
+
+#rain.enabled > svg:nth-child(2) {
+  color: #fff;
+  background: #000;
 }
 
 #cursor, #error, #loading {

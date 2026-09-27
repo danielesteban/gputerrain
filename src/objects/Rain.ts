@@ -1,11 +1,13 @@
 import { vec3 } from 'gl-matrix';
 import { RainData } from 'compute/RainData';
 import RainMaterialCode from 'objects/RainMaterial.wgsl';
+import type { World } from 'objects/World';
 import { CameraGPUStruct } from 'render/Camera';
 import { Geometry } from 'render/Geometry';
 import { Material } from 'render/Material';
 import { Mesh, TransformGPUStruct } from 'render/Mesh';
 import type { Renderer } from 'render/Renderer';
+import type { SFX } from 'sounds/SFX';
 
 export class Rain extends Mesh {
   private static material?: Material;
@@ -49,9 +51,10 @@ export class Rain extends Mesh {
   }
 
   private readonly data: RainData;
+  private readonly sfx: SFX;
 
-  constructor(renderer: Renderer) {
-    const data = new RainData(renderer);
+  constructor(renderer: Renderer, sfx: SFX, world: World) {
+    const data = new RainData(renderer, world);
     super(
       renderer,
       renderer.getDefaultGeometry('Box'),
@@ -64,6 +67,8 @@ export class Rain extends Mesh {
     this.instanceCount = RainData.instanceCount;
     this.renderOrder = 10;
     this.scale = vec3.fromValues(0.1, 1.0, 0.1);
+    this.sfx = sfx;
+    this.visible = false;
   }
 
   override destroy() {
@@ -72,7 +77,28 @@ export class Rain extends Mesh {
     super.destroy();
   }
 
+  get enabled() {
+    return this.visible;
+  }
+
+  set enabled(value: boolean) {
+    const { sfx } = this;
+    this.visible = value;
+    sfx.setAmbient('rain', value);
+  }
+
   getData() {
     return this.data;
+  }
+  
+  override animate(delta: number, time: number) {
+    const { data } = this;
+    data.animate(delta, time);
+    super.animate(delta, time);
+  }
+
+  compute(pass: GPUComputePassEncoder) {
+    const { data } = this;
+    data.compute(pass);
   }
 }
